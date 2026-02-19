@@ -333,6 +333,13 @@ const createShapeMask = (shapeData) => {
             svgContent = `<rect x="0" y="0" width="${width}" height="${height}" fill="white"/>`;
             break;
             
+        case 'rounded':
+            // Rounded rectangle with rx/ry = 10% of smaller dimension
+            const rx = Math.min(width, height) * 0.1;
+            const ry = rx;
+            svgContent = `<rect x="0" y="0" width="${width}" height="${height}" rx="${rx}" ry="${ry}" fill="white"/>`;
+            break;
+            
         case 'polygon':
             svgContent = createPolygonSVG(width, height, polygonSides || 6);
             break;

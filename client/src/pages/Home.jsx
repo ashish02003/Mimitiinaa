@@ -1,23 +1,49 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaSearch, FaChevronRight } from 'react-icons/fa';
 import CategoryCard from '../components/CategoryCard';
 
 const Home = () => {
     const [templates, setTemplates] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [selectedTemplate, setSelectedTemplate] = useState(null);
+    const [showTemplateModal, setShowTemplateModal] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchTemplates = async () => {
+        const fetchData = async () => {
             try {
-                const { data } = await axios.get('http://localhost:5000/api/templates');
-                setTemplates(data);
+                const [templatesRes, categoriesRes] = await Promise.all([
+                    axios.get('http://localhost:5000/api/templates'),
+                    axios.get('http://localhost:5000/api/categories')
+                ]);
+                setTemplates(templatesRes.data);
+                setCategories(categoriesRes.data);
             } catch (error) {
                 console.error(error);
             }
         };
-        fetchTemplates();
+        fetchData();
+        
+        // Refresh every 5 seconds to catch new categories/templates
+        const interval = setInterval(fetchData, 5000);
+        return () => clearInterval(interval);
     }, []);
+
+    // Group templates by category
+    const templatesByCategory = categories.reduce((acc, category) => {
+        const categoryTemplates = templates.filter(t => t.category === category.name);
+        if (categoryTemplates.length > 0) {
+            acc[category.name] = categoryTemplates;
+        }
+        return acc;
+    }, {});
+
+    const handleTemplateClick = (template) => {
+        setSelectedTemplate(template);
+        setShowTemplateModal(true);
+    };
 
     return (
         <div className="bg-white min-h-screen">
@@ -42,88 +68,174 @@ const Home = () => {
                 </div>
             </div>
 
-            {/* 3. Popular Products Section */}
+            {/* 3. Popular Categories Section */}
             <div className="bg-[#fffdf2] py-12 border-y border-yellow-100">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-10">
                         <h2 className="text-2xl font-black text-[#5c4a30] uppercase tracking-widest relative inline-block">
-                            Popular Products
+                            Shop by Category
                             <span className="absolute -bottom-2 left-0 right-0 h-1 bg-yellow-400/30 rounded-full"></span>
                         </h2>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-8">
-                        <CategoryCard title="Photo Albums" image="https://images.unsplash.com/photo-1544273677-277914c9ad3a?w=400" link="/photo-albums" />
-                        <CategoryCard title="Name Pencils" image="https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400" link="/pencils" />
-
-                        <CategoryCard title="Fridge Magnets" image="https://images.unsplash.com/photo-1618220179428-22790b461013?w=400" link="/magnets" />
-                        <CategoryCard title="Mugs" image="https://img.freepik.com/premium-psd/white-mug-mockup_1310-721.jpg" link="/category/mugs" />
-                        <CategoryCard title="Sippers / Bottles" image="https://images.unsplash.com/photo-1570831739435-6601aa3fa4fb?w=400" link="/category/sippers" />
-                        <CategoryCard title="Metal Name" image="https://images.unsplash.com/photo-1534670007418-fbb7f6cf32c3?w=400" link="/metal-names" />
+                        {categories.map((cat) => (
+                            <CategoryCard
+                                key={cat._id}
+                                title={cat.name}
+                                image={cat.image || 'https://via.placeholder.com/150'}
+                                link={`/category/${cat.name}`}
+                            />
+                        ))}
                     </div>
                 </div>
             </div>
 
-            {/* 4. New In Section (Existing Templates) */}
-            <div className="container mx-auto px-4 py-16">
-                <div className="flex justify-between items-end mb-10 border-b-2 border-gray-100 pb-4">
-                    <div>
-                        <h2 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">New In</h2>
-                        <div className="h-1 w-20 bg-blue-600 mt-1 rounded-full"></div>
+            {/* 4. Category-wise Template Sections */}
+            {Object.entries(templatesByCategory).map(([categoryName, categoryTemplates]) => (
+                <div key={categoryName} className="container mx-auto px-4 py-16">
+                    <div className="flex justify-between items-end mb-10 border-b-2 border-gray-100 pb-4">
+                        <div>
+                            <h2 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">{categoryName}</h2>
+                            <div className="h-1 w-20 bg-blue-600 mt-1 rounded-full"></div>
+                        </div>
+                        <Link 
+                            to={`/category/${categoryName}`} 
+                            className="text-blue-600 font-bold text-sm flex items-center gap-1 hover:gap-2 transition-all"
+                        >
+                            VIEW ALL <FaChevronRight className="text-xs" />
+                        </Link>
                     </div>
-                    <Link to="/templates" className="text-blue-600 font-bold text-sm flex items-center gap-1 hover:gap-2 transition-all">
-                        VIEW ALL <FaChevronRight className="text-xs" />
-                    </Link>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-                    {templates.map(template => (
-                        <div key={template._id} className="group relative">
-                            {/* Product Card */}
-                            <div className="bg-white rounded-[2rem] overflow-hidden shadow-lg border border-gray-100 transition-all duration-500 hover:shadow-2xl hover:border-blue-100">
-                                <div className="aspect-[3/4] overflow-hidden relative">
-                                    <img
-                                        src={template.previewImage}
-                                        alt={template.name}
-                                        className="w-full h-full object-contain p-6 group-hover:scale-110 transition-transform duration-700"
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = 'https://placehold.co/400x600/f8fafc/6366f1?text=' + template.name.replace(' ', '+');
-                                        }}
-                                    />
-                                    {/* Quick Access Overlay */}
-                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                        <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest text-blue-600 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                            Quick Customize
-                                        </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {categoryTemplates.slice(0, 5).map(template => (
+                            <div 
+                                key={template._id} 
+                                className="group relative cursor-pointer"
+                                onClick={() => handleTemplateClick(template)}
+                            >
+                                {/* Product Card */}
+                                <div className="bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-blue-200 hover:-translate-y-1">
+                                    <div className="aspect-square overflow-hidden relative bg-gray-50">
+                                        <img
+                                            src={template.previewImage || template.backgroundImageUrl}
+                                            alt={template.name}
+                                            className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = 'https://placehold.co/400x400/f8fafc/6366f1?text=' + template.name.replace(' ', '+');
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="p-4 text-center">
+                                        <h3 className="text-sm font-bold text-gray-800 mb-2 line-clamp-2 min-h-[2.5rem]">{template.name}</h3>
+                                        <p className="text-lg font-black text-green-600 mb-3">From ₹{template.basePrice}</p>
+                                        <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-xs uppercase tracking-wide hover:bg-blue-700 transition-all">
+                                            View Details
+                                        </button>
                                     </div>
                                 </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
 
-                                <div className="p-6 text-center">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 mb-1">{template.category}</p>
-                                    <h3 className="text-lg font-bold text-gray-800 mb-3 truncate px-2">{template.name}</h3>
+            {/* Template Detail Modal */}
+            {showTemplateModal && selectedTemplate && (
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setShowTemplateModal(false)}>
+                    <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                            className="absolute top-4 right-4 text-3xl font-bold text-gray-400 hover:text-gray-600 z-10"
+                            onClick={() => setShowTemplateModal(false)}
+                        >
+                            ×
+                        </button>
 
-                                    <div className="flex flex-col gap-3">
-                                        <span className="text-2xl font-black text-gray-900">₹{template.basePrice}</span>
-                                        <Link
-                                            to={`/customize/${template._id}`}
-                                            className="bg-blue-600 text-white py-3 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-blue-200 active:scale-95"
+                        <div className="grid md:grid-cols-2 gap-6 p-6">
+                            {/* Left: Sample Preview */}
+                            <div>
+                                <h3 className="text-xl font-black mb-4 text-gray-900">Sample Preview</h3>
+                                <div className="bg-gray-100 rounded-xl p-6 aspect-square flex items-center justify-center">
+                                    <img
+                                        src={selectedTemplate.previewImage || selectedTemplate.backgroundImageUrl}
+                                        alt={selectedTemplate.name}
+                                        className="max-w-full max-h-full object-contain"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = 'https://placehold.co/400x400/f8fafc/6366f1?text=' + selectedTemplate.name.replace(' ', '+');
+                                        }}
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2 text-center italic">
+                                    This is how your design will look after uploading your photo
+                                </p>
+                            </div>
+
+                            {/* Right: Product Details */}
+                            <div>
+                                <h3 className="text-xl font-black mb-4 text-gray-900">Product Details</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="text-2xl font-black text-gray-900 mb-2">{selectedTemplate.name}</h4>
+                                        <p className="text-sm text-blue-600 font-bold uppercase">{selectedTemplate.category}</p>
+                                    </div>
+
+                                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                                        <div className="flex justify-between">
+                                            <span className="font-semibold text-gray-600">Price:</span>
+                                            <span className="text-green-600 font-black text-xl">₹{selectedTemplate.basePrice}</span>
+                                        </div>
+                                        {selectedTemplate.brand && (
+                                            <div className="flex justify-between">
+                                                <span className="font-semibold text-gray-600">Brand:</span>
+                                                <span className="text-gray-800">{selectedTemplate.brand}</span>
+                                            </div>
+                                        )}
+                                        {selectedTemplate.modelName && (
+                                            <div className="flex justify-between">
+                                                <span className="font-semibold text-gray-600">Model:</span>
+                                                <span className="text-gray-800">{selectedTemplate.modelName}</span>
+                                            </div>
+                                        )}
+                                        {selectedTemplate.productSize && (
+                                            <div className="flex justify-between">
+                                                <span className="font-semibold text-gray-600">Product Size:</span>
+                                                <span className="text-gray-800">{selectedTemplate.productSize}</span>
+                                            </div>
+                                        )}
+                                        {selectedTemplate.printSize && (
+                                            <div className="flex justify-between">
+                                                <span className="font-semibold text-gray-600">Print Size:</span>
+                                                <span className="text-gray-800">{selectedTemplate.printSize}</span>
+                                            </div>
+                                        )}
+                                        {selectedTemplate.moq && (
+                                            <div className="flex justify-between">
+                                                <span className="font-semibold text-gray-600">MOQ:</span>
+                                                <span className="text-gray-800">{selectedTemplate.moq}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="pt-4">
+                                        <button
+                                            onClick={() => {
+                                                setShowTemplateModal(false);
+                                                navigate(`/customize/${selectedTemplate._id}`);
+                                            }}
+                                            className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-lg uppercase tracking-wider hover:bg-blue-700 transition-all shadow-lg"
                                         >
                                             Customize Now
-                                        </Link>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    ))}
-                </div>
-
-                {templates.length === 0 && (
-                    <div className="text-center py-20 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
-                        <p className="text-gray-400 font-bold uppercase tracking-widest">No product templates found. Stay tuned!</p>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* 5. Site Footer */}
             <footer className="bg-gray-50 border-t py-12 mt-12">

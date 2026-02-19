@@ -73,59 +73,37 @@ const ProductCategory = () => {
                         <p className="text-gray-400 font-bold uppercase tracking-widest">No {displayCategory} found for your search.</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto bg-white rounded-3xl shadow-2xl border border-gray-100">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-                                    <th className="py-5 px-6 font-black uppercase text-[10px] tracking-widest rounded-tl-3xl">SI No.</th>
-                                    <th className="py-5 px-6 font-black uppercase text-[10px] tracking-widest">Variant No</th>
-                                    <th className="py-5 px-6 font-black uppercase text-[10px] tracking-widest">Item Name</th>
-                                    <th className="py-5 px-6 font-black uppercase text-[10px] tracking-widest">Product Size</th>
-                                    <th className="py-5 px-6 font-black uppercase text-[10px] tracking-widest">Print Size</th>
-                                    <th className="py-5 px-6 font-black uppercase text-[10px] tracking-widest">MOQ</th>
-                                    <th className="py-5 px-6 font-black uppercase text-[10px] tracking-widest rounded-tr-3xl text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredTemplates.map((template, index) => (
-                                    <tr key={template._id} className="border-b border-gray-50 hover:bg-blue-50/30 transition-colors group">
-                                        <td className="py-6 px-6 font-bold text-gray-400">{index + 1}</td>
-                                        <td className="py-6 px-6">
-                                            <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-md font-black text-[11px] group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
-                                                {template.variantNo || 'N/A'}
-                                            </span>
-                                        </td>
-                                        <td className="py-6 px-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden p-2 flex-shrink-0">
-                                                    <img
-                                                        src={template.previewImage}
-                                                        alt={template.name}
-                                                        className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <p className="font-black text-gray-900 group-hover:text-blue-600 transition-colors">{template.name}</p>
-                                                    <p className="text-[10px] font-bold text-blue-500 uppercase">₹{template.basePrice}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-6 px-6 font-bold text-gray-600">{template.productSize || '-'}</td>
-                                        <td className="py-6 px-6 font-bold text-gray-600">{template.printSize || '-'}</td>
-                                        <td className="py-6 px-6 font-black text-gray-900">{template.moq || 1}</td>
-                                        <td className="py-6 px-6 text-center">
-                                            <button
-                                                onClick={() => navigate(`/customize/${template._id}`)}
-                                                className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg shadow-blue-200 active:scale-95 flex items-center gap-2 mx-auto justify-center"
-                                            >
-                                                <FaMagic className="text-xs" />
-                                                Customize
-                                            </button>
-                                        </td>
-                                    </tr>
-                                )).reverse()}
-                            </tbody>
-                        </table>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {filteredTemplates.map((template) => (
+                            <div 
+                                key={template._id} 
+                                className="group relative cursor-pointer"
+                                onClick={() => navigate(`/customize/${template._id}`)}
+                            >
+                                {/* Product Card */}
+                                <div className="bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-blue-200 hover:-translate-y-1">
+                                    <div className="aspect-square overflow-hidden relative bg-gray-50">
+                                        <img
+                                            src={template.previewImage || template.backgroundImageUrl}
+                                            alt={template.name}
+                                            className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = 'https://placehold.co/400x400/f8fafc/6366f1?text=' + template.name.replace(' ', '+');
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="p-4 text-center">
+                                        <h3 className="text-sm font-bold text-gray-800 mb-2 line-clamp-2 min-h-[2.5rem]">{template.name}</h3>
+                                        <p className="text-lg font-black text-green-600 mb-3">From ₹{template.basePrice}</p>
+                                        <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-xs uppercase tracking-wide hover:bg-blue-700 transition-all">
+                                            Customize Now
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

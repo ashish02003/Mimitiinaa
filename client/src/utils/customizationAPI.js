@@ -74,12 +74,19 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Upload image to Cloudinary
-export const uploadImage = async (file) => {
+// Upload image to Cloudinary with progress tracking
+export const uploadImage = async (file, onProgress) => {
     const formData = new FormData();
     formData.append('image', file);
     
-    const response = await axios.post(`${API_URL}/upload`, formData);
+    const response = await axios.post(`${API_URL}/upload`, formData, {
+        onUploadProgress: (progressEvent) => {
+            if (onProgress && progressEvent.total) {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                onProgress(percentCompleted);
+            }
+        }
+    });
     return response.data.url;
 };
 
@@ -92,14 +99,22 @@ export const clipImageToShape = async (imageUrl, shapeData) => {
     return response.data.data;
 };
 
-// Complete process: Upload + Clip
-  export const processImageForShape = async (file, shapeData) => {
+// Complete process: Upload + Clip with progress tracking
+export const processImageForShape = async (file, shapeData, onProgress) => {
     try {
-        // Step 1: Upload original image to Cloudinary
-        const originalUrl = await uploadImage(file);
+        // Step 1: Upload original image to Cloudinary (0-70% progress)
+        const uploadProgress = (percent) => {
+            if (onProgress) {
+                // Upload is 70% of total process
+                onProgress(Math.round(percent * 0.7));
+            }
+        };
+        const originalUrl = await uploadImage(file, uploadProgress);
         
-        // Step 2: Send to backend for shape clipping
+        // Step 2: Send to backend for shape clipping (70-100% progress)
+        if (onProgress) onProgress(85);
         const clippedData = await clipImageToShape(originalUrl, shapeData);
+        if (onProgress) onProgress(100);
         
         return {
             originalUrl,

@@ -30,6 +30,7 @@ app.use('/api/templates', require('./routes/templateRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
+app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/customization', require('./routes/customizationRoutes')); // 👈 ADD THIS
 
 app.get('/', (req, res) => {

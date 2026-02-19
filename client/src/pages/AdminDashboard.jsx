@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FaShoppingBag, FaPalette, FaClipboardList, FaBoxes } from 'react-icons/fa';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -45,6 +46,9 @@ const AdminDashboard = () => {
                 </Link>
                 <Link to="/admin/orders" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 font-semibold">
                     View Orders
+                </Link>
+                <Link to="/admin/categories" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 font-semibold flex items-center gap-2">
+                    <FaBoxes /> Manage Categories
                 </Link>
             </div>
 

@@ -20,7 +20,26 @@ const CreateTemplate = () => {
     const [productSize, setProductSize] = useState('');
     const [printSize, setPrintSize] = useState('');
     const [moq, setMoq] = useState(1);
+    const [categories, setCategories] = useState([]); // 👈 NEW
     const [activeTab, setActiveTab] = useState('background'); // background, shapes, text, elements
+
+    // Fetch Categories
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const { data } = await axios.get('http://localhost:5000/api/categories');
+                setCategories(data);
+                // Set default category if none selected and categories exist
+                if (data.length > 0 && !category) {
+                    setCategory(data[0].name);
+                }
+            } catch (error) {
+                console.error('Failed to fetch categories', error);
+                toast.error('Failed to load categories');
+            }
+        };
+        fetchCategories();
+    }, []);
     const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
     const [selectedObject, setSelectedObject] = useState(null);
     const [objProps, setObjProps] = useState({
@@ -310,6 +329,21 @@ const CreateTemplate = () => {
                     scaleX: 0.15,
                     scaleY: 0.15,
                     shapeType: 'heart'
+                });
+                break;
+            case 'rounded':
+                // Create rounded rectangle
+                shape = new fabric.Rect({
+                    left: centerX,
+                    top: centerY,
+                    width: 150,
+                    height: 100,
+                    rx: 20, // Horizontal radius for rounded corners
+                    ry: 20, // Vertical radius for rounded corners
+                    fill: '#9b59b6',
+                    stroke: '#333',
+                    strokeWidth: 2,
+                    shapeType: 'rounded'
                 });
                 break;
         }
@@ -684,10 +718,13 @@ const CreateTemplate = () => {
                                 onChange={e => setName(e.target.value)}
                             />
                             <select className="w-full border p-2 rounded text-sm mb-2" value={category} onChange={e => setCategory(e.target.value)}>
-                                <option>Mobile Cover</option>
-                                <option>Mug</option>
-                                <option>Sippers / Bottles</option>
-                                <option>T-Shirt</option>
+                                {categories.length > 0 ? (
+                                    categories.map(cat => (
+                                        <option key={cat._id} value={cat.name}>{cat.name}</option>
+                                    ))
+                                ) : (
+                                    <option>Loading...</option>
+                                )}
                             </select>
                             <input
                                 type="number"
@@ -822,6 +859,9 @@ const CreateTemplate = () => {
                                     <button className="p-3 border rounded hover:bg-gray-50 text-sm" onClick={() => addShape('rect')}>
                                         ⬜ Rectangle
                                     </button>
+                                    <button className="p-3 border rounded hover:bg-gray-50 text-sm" onClick={() => addShape('rounded')}>
+                                        🔲 Rounded
+                                    </button>
                                     <button className="p-3 border rounded hover:bg-gray-50 text-sm" onClick={() => addShape('circle')}>
                                         ⚫ Circle
                                     </button>
@@ -831,7 +871,7 @@ const CreateTemplate = () => {
                                     <button className="p-3 border rounded hover:bg-gray-50 text-sm" onClick={() => addShape('star')}>
                                         ⭐ Star
                                     </button>
-                                    <button className="p-3 border rounded hover:bg-gray-50 text-sm col-span-2" onClick={() => addShape('heart')}>
+                                    <button className="p-3 border rounded hover:bg-gray-50 text-sm" onClick={() => addShape('heart')}>
                                         ❤️ Heart
                                     </button>
                                 </div>

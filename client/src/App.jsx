@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminOrders from './pages/AdminOrders';
+import AdminCategories from './pages/AdminCategories';
 import CreateTemplate from './pages/CreateTemplate';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
@@ -119,6 +120,11 @@ function App() {
                             <Route path="/admin/orders" element={
                                 <ProtectedRoute adminOnly={true}>
                                     <AdminOrders />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/admin/categories" element={
+                                <ProtectedRoute adminOnly={true}>
+                                    <AdminCategories />
                                 </ProtectedRoute>
                             } />
                             <Route path="/admin/edit-template/:id" element={
