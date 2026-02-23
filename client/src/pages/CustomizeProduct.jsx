@@ -6,7 +6,8 @@ import EmojiPicker from 'emoji-picker-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
-import { processImageForShape } from '../utils/customizationAPI';
+import MugWrapPreview from '../components/MugWrapPreview';
+// customizationAPI no longer needed – frontend clipPath approach is used
 
 const CustomizeProduct = () => {
     const { id } = useParams();
@@ -20,6 +21,9 @@ const CustomizeProduct = () => {
     const [loadingAction, setLoadingAction] = useState(null);
     const [previewModalOpen, setPreviewModalOpen] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
+    // Mug/cylindrical wrap preview
+    const [mugPreviewUrl, setMugPreviewUrl] = useState(null);   // flat design URL for mug warp render
+    const [showMugPreview, setShowMugPreview] = useState(false); // toggle the 3D preview panel
 
     const { user } = useAuth();
     const { addToCart } = useCart();
@@ -31,6 +35,11 @@ const CustomizeProduct = () => {
             try {
                 const { data } = await axios.get(`http://localhost:5000/api/templates/${id}`);
                 setTemplate(data);
+
+                // If it's a mug and user has already uploaded something, or if it's explicitly a wrap template
+                if (data.category === 'Mug' || data.wrapType === 'mug') {
+                    setShowMugPreview(true);
+                }
             } catch (error) {
                 console.error(error);
             }
@@ -83,6 +92,18 @@ const CustomizeProduct = () => {
                 if (linkedImage) {
                     const c = placeholder.getCenterPoint();
                     linkedImage.set({ left: c.x, top: c.y });
+                    // Keep clipPath in sync so image stays clipped to placeholder shape
+                    if (linkedImage.clipPath) {
+                        linkedImage.clipPath.set({
+                            left: placeholder.left,
+                            top: placeholder.top,
+                            angle: placeholder.angle || 0,
+                            scaleX: placeholder.scaleX,
+                            scaleY: placeholder.scaleY,
+                            originX: placeholder.originX || 'center',
+                            originY: placeholder.originY || 'center'
+                        });
+                    }
                     initCanvas.renderAll();
                 }
                 return;
@@ -274,7 +295,7 @@ const CustomizeProduct = () => {
                         if (role === 'placeholder' || id === 'user_photo_area') {
                             // Preserve shapeType from original object (star, circle, etc.)
                             const preservedShapeType = item.shapeType || originalObj.shapeType;
-                            
+
                             item.set({
                                 role: 'placeholder',
                                 id: id || `placeholder_${index}`, // Ensure ID is present
@@ -296,14 +317,16 @@ const CustomizeProduct = () => {
                                 originY: 'center',
                                 hoverCursor: 'pointer'
                             });
-                            
+
                             // Also set on instance for serialization
                             item.shapeType = preservedShapeType;
 
-                            const center = item.getCenterPoint();
+                            const center = (typeof item.getCenterPoint === 'function' ? item.getCenterPoint() : null) || { x: 200, y: 300 };
                             const labelId = `label_${item.id}`;
+                            const w = item.type === 'path' && item.getBoundingRect ? item.getBoundingRect().width : (item.width * (item.scaleX || 1));
+                            const h = item.type === 'path' && item.getBoundingRect ? item.getBoundingRect().height : (item.height * (item.scaleY || 1));
                             const label = new fabric.IText('Select\nPhoto', {
-                                fontSize: Math.min(item.width, item.height) / 5,
+                                fontSize: Math.max(14, Math.min(w || 80, h || 80) / 5),
                                 fill: '#555555',
                                 backgroundColor: 'transparent', // Clean formatting
                                 fontWeight: 'bold',
@@ -358,8 +381,7 @@ const CustomizeProduct = () => {
     const handleImageUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file || !canvas) {
-            // If no file selected, clear the active placeholder reference but keep it visible
-            canvas.activePlaceholder = null;
+            if (canvas) canvas.activePlaceholder = null;
             return;
         }
 
@@ -368,176 +390,130 @@ const CustomizeProduct = () => {
 
         const loadingToast = toast.loading('Uploading...');
         try {
-            // 1. Identify Placeholder Logic
+            // ── Step 1: Find the target placeholder ──────────────────────────────────
             let placeholder = canvas.activePlaceholder || canvas.getActiveObject();
 
-            // Validation: Ensure selected object is actually a placeholder
-            if (placeholder && placeholder.role !== 'placeholder') {
-                placeholder = null;
-            }
+            // Must be an actual placeholder
+            if (placeholder && placeholder.role !== 'placeholder') placeholder = null;
 
-            // Fallback 1: Find first visible placeholder by role
+            // Fallback A: first visible placeholder by role
             if (!placeholder) {
                 const candidates = canvas.getObjects().filter(o => o.role === 'placeholder');
                 placeholder = candidates.find(o => o.visible !== false) || candidates[0];
             }
 
-            // Fallback 2: Check by ID (legacy support or specific naming)
+            // Fallback B: by ID (Prioritize Mug Wrap)
             if (!placeholder) {
-                placeholder = canvas.getObjects().find(o => o.id && (o.id === 'user_photo_area' || o.id.startsWith('placeholder')));
+                const mugArea = canvas.getObjects().find(o => o.id && o.id.includes('mug_wrap_area'));
+                placeholder = mugArea || canvas.getObjects().find(o =>
+                    o.id && (o.id === 'user_photo_area' || o.id.startsWith('placeholder'))
+                );
             }
 
-            // Fallback 3: Heuristic – use largest non-background shape as placeholder (for templates like "Key")
+            // Fallback C: largest non-background shape
             if (!placeholder) {
-                const candidateShapes = canvas.getObjects().filter(o => {
-                    if (o.id === 'background_image') return false;
-                    if (o.role === 'placeholder-label') return false;
+                const shapes = canvas.getObjects().filter(o => {
+                    if (o.id === 'background_image' || o.role === 'placeholder-label') return false;
                     if (o.type === 'image') return false;
-                    return typeof o.getScaledWidth === 'function' && typeof o.getScaledHeight === 'function';
+                    return true;
                 });
-
-                if (candidateShapes.length > 0) {
-                    candidateShapes.sort((a, b) => {
-                        const areaA = (a.getScaledWidth() || 0) * (a.getScaledHeight() || 0);
-                        const areaB = (b.getScaledWidth() || 0) * (b.getScaledHeight() || 0);
-                        return areaB - areaA;
-                    });
-                    placeholder = candidateShapes[0];
-                    // Mark it as a placeholder for subsequent uploads
+                if (shapes.length > 0) {
+                    const area = (o) => {
+                        try {
+                            if (o.type === 'path' && o.getBoundingRect) {
+                                const r = o.getBoundingRect(); return r.width * r.height;
+                            }
+                            return (o.getScaledWidth?.() || 0) * (o.getScaledHeight?.() || 0);
+                        } catch { return 0; }
+                    };
+                    shapes.sort((a, b) => area(b) - area(a));
+                    placeholder = shapes[0];
                     placeholder.set({ role: 'placeholder' });
                     placeholder.role = 'placeholder';
                 }
             }
 
             if (!placeholder) {
-                return toast.error("No photo area found on this design. Please ask admin to mark a placeholder.", { id: loadingToast });
+                return toast.error('No photo area found. Ask admin to mark a placeholder.', { id: loadingToast });
             }
 
-            // 2. Build shape data for backend clipping (supports custom/path placeholders e.g. "Key")
-            const width = placeholder.getScaledWidth();
-            const height = placeholder.getScaledHeight();
-
-            if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 1 || height <= 1) {
-                return toast.error('Invalid placeholder size. Please ask admin to re-save the template.', { id: loadingToast });
-            }
-
-            // Map common Fabric/template shapeType values to backend-supported types
-            const mapShapeType = (t) => {
-                const v = (t || '').toLowerCase();
-                if (v === 'rect' || v === 'rectangle') return 'rectangle';
-                if (v === 'rounded') return 'rounded';
-                if (v === 'circle') return 'circle';
-                if (v === 'ellipse') return 'ellipse';
-                if (v === 'triangle') return 'polygon';
-                if (v === 'polygon') return 'polygon';
-                if (v === 'star') return 'star';
-                if (v === 'heart') return 'heart';
-                if (v === 'custom' || v === 'path' || v === 'key') return 'custom';
-                return 'rectangle';
-            };
-
-            // Try to extract an SVG path "d" for Fabric Path placeholders
-            const extractSvgPathD = (obj) => {
-                try {
-                    if (!obj || typeof obj.toSVG !== 'function') return null;
-                    const svg = obj.toSVG();
-                    const match = svg && svg.match(/d="([^"]+)"/);
-                    return match?.[1] || null;
-                } catch {
-                    return null;
-                }
-            };
-
-            // Get shapeType from placeholder (preserved from admin template)
-            let detectedShapeType = placeholder.shapeType;
-            
-            // Fallback: detect from Fabric object type if shapeType not set
-            if (!detectedShapeType) {
-                if (placeholder.type === 'polygon') {
-                    // Check if it's a star by counting points (stars have 10 points for 5-point star)
-                    const points = placeholder.points;
-                    if (points && points.length === 10) {
-                        detectedShapeType = 'star';
-                    } else {
-                        detectedShapeType = 'polygon';
-                    }
-                } else if (placeholder.type === 'path') {
-                    detectedShapeType = 'custom';
-                } else if (placeholder.type === 'circle') {
-                    detectedShapeType = 'circle';
-                } else if (placeholder.type === 'rect') {
-                    detectedShapeType = 'rectangle';
-                } else {
-                    detectedShapeType = 'rectangle';
-                }
-            }
-            
-            let shapeData = {
-                shapeType: mapShapeType(detectedShapeType),
-                size: { width, height }
-            };
-            
-            // Debug log for troubleshooting
-            console.log('Placeholder info:', {
-                type: placeholder.type,
-                shapeType: placeholder.shapeType,
-                detected: detectedShapeType,
-                mapped: shapeData.shapeType,
-                size: { width, height }
-            });
-
-            // If placeholder itself is a Path (or admin used a key outline), send customPath
-            if (placeholder.type === 'path' || shapeData.shapeType === 'custom') {
-                const d = extractSvgPathD(placeholder);
-                if (d) {
-                    shapeData = {
-                        ...shapeData,
-                        shapeType: 'custom',
-                        customPath: d
-                    };
-                } else {
-                    // Fallback to rectangle if we can't serialize the path
-                    shapeData = { shapeType: 'rectangle', size: { width, height } };
-                }
-            }
-
-            // 3. Upload + clip image on backend (Cloudinary + Sharp) with progress
-            toast.loading('Uploading 0%', { 
+            // ── Step 2: Upload raw image to Cloudinary ───────────────────────────────
+            toast.loading('Uploading 0%', {
                 id: loadingToast,
-                style: {
-                    background: '#f0fdf4',
-                    border: '1px solid #86efac',
-                    color: '#16a34a'
+                style: { background: '#f0fdf4', border: '1px solid #86efac', color: '#16a34a' }
+            });
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const uploadRes = await axios.post('http://localhost:5000/api/upload', formData, {
+                onUploadProgress: (ev) => {
+                    if (ev.total) {
+                        const pct = Math.round((ev.loaded * 100) / ev.total);
+                        toast.loading(`Uploading ${pct}%`, {
+                            id: loadingToast,
+                            style: { background: '#f0fdf4', border: '1px solid #86efac', color: '#16a34a', fontWeight: 'bold' }
+                        });
+                    }
                 }
             });
-            
-            const processed = await processImageForShape(file, shapeData, (percent) => {
-                // Update toast with green styling and percentage
-                toast.loading(`Uploading ${percent}%`, { 
-                    id: loadingToast,
-                    style: {
-                        background: '#f0fdf4',
-                        border: '1px solid #86efac',
-                        color: '#16a34a',
-                        fontWeight: 'bold'
-                    }
+
+            const imageUrl = uploadRes.data.url;
+
+            // ── Step 3: Load image into Fabric.js ───────────────────────────────────
+            let img;
+            try {
+                img = await fabric.FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
+            } catch (loadErr) {
+                console.error('Image load failed:', loadErr);
+                return toast.error('Image could not be loaded. Try another image.', { id: loadingToast });
+            }
+
+            if (!img || !img.width) {
+                return toast.error('Invalid image from server. Try again.', { id: loadingToast });
+            }
+
+            // ── Step 4: Clone placeholder → use as Fabric clipPath ───────────────────
+            // This works for ANY shape: Heart (path), Star (polygon), Circle, Rect, free-draw, etc.
+            let clipMask = null;
+            try {
+                clipMask = await placeholder.clone();
+                clipMask.set({
+                    absolutePositioned: true,
+                    left: placeholder.left,
+                    top: placeholder.top,
+                    scaleX: placeholder.scaleX || 1,
+                    scaleY: placeholder.scaleY || 1,
+                    angle: placeholder.angle || 0,
+                    originX: placeholder.originX || 'center',
+                    originY: placeholder.originY || 'center',
+                    evented: false,
+                    selectable: false
                 });
-            });
-            
-            // 4. Load final clipped image from Cloudinary
-            const img = await fabric.FabricImage.fromURL(processed.clippedUrl, {
-                crossOrigin: 'anonymous'
-            });
+            } catch (cloneErr) {
+                console.warn('Could not clone placeholder for clipPath:', cloneErr);
+                clipMask = null;
+            }
 
-            // 5. Position inside placeholder area
-            const center = placeholder.getCenterPoint();
-            const pW = width;
-            const pH = height;
+            // ── Step 5: Get placeholder bounding size ────────────────────────────────
+            let pW, pH;
+            try {
+                if (placeholder.type === 'path' && typeof placeholder.getBoundingRect === 'function') {
+                    const r = placeholder.getBoundingRect();
+                    pW = r.width; pH = r.height;
+                } else {
+                    pW = placeholder.getScaledWidth?.() ?? (placeholder.width * (placeholder.scaleX || 1));
+                    pH = placeholder.getScaledHeight?.() ?? (placeholder.height * (placeholder.scaleY || 1));
+                }
+            } catch { /* ignore */ }
+            if (!pW || !pH || !Number.isFinite(pW) || !Number.isFinite(pH)) { pW = 200; pH = 200; }
 
-            // Ensure image fully covers the placeholder bounds
-            const baseW = img.width || pW;
-            const baseH = img.height || pH;
-            const scale = Math.max(pW / baseW, pH / baseH);
+            // ── Step 6: Position & scale image to cover the placeholder ──────────────
+            const center = (typeof placeholder.getCenterPoint === 'function')
+                ? placeholder.getCenterPoint()
+                : { x: canvas.width / 2, y: canvas.height / 2 };
+
+            const scale = Math.max(pW / img.width, pH / img.height);
 
             img.set({
                 left: center.x,
@@ -545,58 +521,58 @@ const CustomizeProduct = () => {
                 originX: 'center',
                 originY: 'center',
                 angle: placeholder.angle || 0,
+                scaleX: scale,
+                scaleY: scale,
+                clipPath: clipMask || undefined,  // ← key: shape mask applied here
                 role: 'clipped-image',
                 maskRef: placeholder,
                 selectable: true,
-                evented: true,
-                scaleX: scale,
-                scaleY: scale
+                evented: true
             });
 
-            // 6. After image upload, unlock placeholder movement so user can reposition shape+image together
-            // But keep it invisible since image is now showing
-            placeholder.set({ 
-                visible: false, 
-                selectable: true, 
+            // ── Step 7: Hide placeholder + label, show image ─────────────────────────
+            placeholder.set({
+                visible: false,
+                selectable: true,
                 evented: true,
-                lockMovementX: false, // Unlock so user can move shape+image together
+                lockMovementX: false,
                 lockMovementY: false
             });
 
             const labelId = `label_${placeholder.id}`;
             const label = canvas.getObjects().find(o =>
-                o.id === labelId ||
-                (o.role === 'placeholder-label' && o.placeholderRef === placeholder)
+                o.id === labelId || (o.role === 'placeholder-label' && o.placeholderRef === placeholder)
             );
             if (label) label.set({ visible: false });
-            
-            // Clear active placeholder reference
+
             canvas.activePlaceholder = null;
 
             canvas.add(img);
             canvas.setActiveObject(img);
             if (canvas.overlayImage) canvas.bringObjectToFront(canvas.overlayImage);
-
+            canvas.bringObjectToFront(img);
             canvas.renderAll();
-            toast.success("Image uploaded! Drag to adjust position.", { 
+
+            // ── Step 8: If mug/bottle template -> trigger cylindrical preview ───────────
+            if (template?.wrapType === 'mug' || template?.wrapType === 'bottle' ||
+                (placeholder && placeholder.shapeType === 'mug-wrap')) {
+                setMugPreviewUrl(imageUrl);
+                setShowMugPreview(true);
+            }
+
+            toast.success('Image uploaded! Drag to reposition.', {
                 id: loadingToast,
-                style: {
-                    background: '#f0fdf4',
-                    border: '1px solid #86efac',
-                    color: '#16a34a',
-                    fontWeight: 'bold'
-                }
+                style: { background: '#f0fdf4', border: '1px solid #86efac', color: '#16a34a', fontWeight: 'bold' }
             });
         } catch (err) {
             console.error(err);
-            const msg =
-                err?.response?.data?.message ||
-                err?.response?.data?.error ||
-                err?.message ||
-                'Error processing image';
+            const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Error uploading image';
             toast.error(msg, { id: loadingToast });
         }
     };
+
+
+
 
     const handleAddToCart = async (directBuy = false) => {
         if (!user || !canvas) return navigate('/login');
@@ -652,7 +628,7 @@ const CustomizeProduct = () => {
             <div className="bg-white p-6 rounded-xl max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
                 <button className="absolute top-4 right-4 text-2xl font-bold hover:text-gray-600" onClick={() => setPreviewModalOpen(false)}>×</button>
                 <h2 className="text-xl font-bold mb-4 text-center">Design Preview</h2>
-                
+
                 {/* Product Details Section */}
                 <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
                     <h3 className="font-bold text-lg mb-3 text-gray-800">Product Details</h3>
@@ -713,7 +689,7 @@ const CustomizeProduct = () => {
                     <img src={previewImage} alt="Final" className="h-full object-contain" />
                     {template.overlayImageUrl && <img src={template.overlayImageUrl} alt="Mockup" className="absolute h-full object-contain pointer-events-none" />}
                 </div>
-                
+
                 <div className="flex justify-end gap-2">
                     <button className="px-4 py-2 border rounded hover:bg-gray-50" onClick={() => setPreviewModalOpen(false)}>Close</button>
                     <button className="px-6 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700" onClick={() => { setPreviewModalOpen(false); handleAddToCart(true); }}>Buy Now</button>
@@ -730,7 +706,20 @@ const CustomizeProduct = () => {
                     <canvas ref={canvasRef} />
                 </div>
                 <button onClick={handlePreview} className="absolute top-4 right-4 bg-white px-4 py-2 rounded shadow font-bold">👁️ Preview</button>
+
+                {/* ─── LIVE 3D WRAP PREVIEW (for Mugs/Bottles) ─── */}
+                {(template?.wrapType === 'mug' || template?.wrapType === 'bottle' || showMugPreview) && mugPreviewUrl && (
+                    <div className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none">
+                        <div className="pointer-events-auto scale-75 origin-bottom translate-y-4">
+                            <MugWrapPreview
+                                photoUrl={mugPreviewUrl}
+                                wrapType={template?.wrapType || 'mug'}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
+
             <div className="w-full lg:w-[400px] bg-white shadow-xl rounded-xl flex flex-col h-full border">
                 <div className="p-4 border-b">
                     <h1 className="text-xl font-bold">{template.name}</h1>
@@ -810,11 +799,10 @@ const CustomizeProduct = () => {
                                                     selectedObject.set('fontWeight', isBold ? 'normal' : 'bold');
                                                     canvas.renderAll();
                                                 }}
-                                                className={`flex-1 p-2 border rounded text-sm font-semibold ${
-                                                    selectedObject.fontWeight === 'bold' 
-                                                        ? 'bg-blue-500 text-white' 
-                                                        : 'bg-gray-50 hover:bg-gray-100'
-                                                }`}
+                                                className={`flex-1 p-2 border rounded text-sm font-semibold ${selectedObject.fontWeight === 'bold'
+                                                    ? 'bg-blue-500 text-white'
+                                                    : 'bg-gray-50 hover:bg-gray-100'
+                                                    }`}
                                             >
                                                 <strong>B</strong>
                                             </button>
@@ -824,11 +812,10 @@ const CustomizeProduct = () => {
                                                     selectedObject.set('fontStyle', isItalic ? 'normal' : 'italic');
                                                     canvas.renderAll();
                                                 }}
-                                                className={`flex-1 p-2 border rounded text-sm ${
-                                                    selectedObject.fontStyle === 'italic' 
-                                                        ? 'bg-blue-500 text-white italic' 
-                                                        : 'bg-gray-50 hover:bg-gray-100'
-                                                }`}
+                                                className={`flex-1 p-2 border rounded text-sm ${selectedObject.fontStyle === 'italic'
+                                                    ? 'bg-blue-500 text-white italic'
+                                                    : 'bg-gray-50 hover:bg-gray-100'
+                                                    }`}
                                             >
                                                 <em>I</em>
                                             </button>

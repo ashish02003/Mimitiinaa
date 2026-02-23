@@ -10,6 +10,7 @@ const createTemplate = async (req, res) => {
             category,
             canvasSettings,
             previewImage,
+            demoImageUrl,
             overlayImageUrl,
             backgroundImageUrl,
             maskImageUrl,
@@ -29,6 +30,7 @@ const createTemplate = async (req, res) => {
             category,
             canvasSettings,
             previewImage,
+            demoImageUrl,
             overlayImageUrl,
             backgroundImageUrl,
             maskImageUrl,
@@ -101,6 +103,7 @@ const updateTemplate = async (req, res) => {
             category,
             canvasSettings,
             previewImage,
+            demoImageUrl,
             overlayImageUrl,
             backgroundImageUrl,
             maskImageUrl,
@@ -122,6 +125,7 @@ const updateTemplate = async (req, res) => {
             template.category = category || template.category;
             template.canvasSettings = canvasSettings || template.canvasSettings;
             template.previewImage = previewImage || template.previewImage;
+            template.demoImageUrl = demoImageUrl !== undefined ? demoImageUrl : template.demoImageUrl;
             template.overlayImageUrl = overlayImageUrl !== undefined ? overlayImageUrl : template.overlayImageUrl;
             template.backgroundImageUrl = backgroundImageUrl !== undefined ? backgroundImageUrl : template.backgroundImageUrl;
             template.maskImageUrl = maskImageUrl !== undefined ? maskImageUrl : template.maskImageUrl;

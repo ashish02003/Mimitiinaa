@@ -59,9 +59,14 @@ const AdminDashboard = () => {
                     templates.map(template => (
                         <div key={template._id} className="bg-white p-4 shadow-lg rounded-xl border border-gray-100 flex flex-col">
                             <img src={template.previewImage} alt={template.name} className="w-full h-48 object-cover mb-4 rounded-lg" />
-                            <div className="flex justify-between items-start mb-2">
+                            <div className="flex justify-between items-start mb-2 flex-wrap gap-1">
                                 <h3 className="font-bold text-lg">{template.name}</h3>
-                                <span className="text-xs font-bold bg-blue-100 text-blue-800 px-2 py-1 rounded-full uppercase tracking-tighter">{template.category}</span>
+                                <div className="flex items-center gap-1">
+                                    {!template.demoImageUrl && (
+                                        <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded" title="User ko shape me demo dikhane ke liye Edit karke Demo Photo upload karein">Demo add karein</span>
+                                    )}
+                                    <span className="text-xs font-bold bg-blue-100 text-blue-800 px-2 py-1 rounded-full uppercase tracking-tighter">{template.category}</span>
+                                </div>
                             </div>
                             <p className="text-gray-600 font-semibold mb-4 text-xl">${template.basePrice}</p>
 

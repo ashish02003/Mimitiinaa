@@ -75,16 +75,12 @@ const ProductCategory = () => {
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                         {filteredTemplates.map((template) => (
-                            <div 
-                                key={template._id} 
-                                className="group relative cursor-pointer"
-                                onClick={() => navigate(`/customize/${template._id}`)}
-                            >
+                            <div key={template._id} className="group relative">
                                 {/* Product Card */}
                                 <div className="bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-blue-200 hover:-translate-y-1">
                                     <div className="aspect-square overflow-hidden relative bg-gray-50">
                                         <img
-                                            src={template.previewImage || template.backgroundImageUrl}
+                                            src={template.demoImageUrl || template.previewImage || template.backgroundImageUrl}
                                             alt={template.name}
                                             className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
                                             onError={(e) => {
@@ -97,8 +93,11 @@ const ProductCategory = () => {
                                     <div className="p-4 text-center">
                                         <h3 className="text-sm font-bold text-gray-800 mb-2 line-clamp-2 min-h-[2.5rem]">{template.name}</h3>
                                         <p className="text-lg font-black text-green-600 mb-3">From ₹{template.basePrice}</p>
-                                        <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-xs uppercase tracking-wide hover:bg-blue-700 transition-all">
-                                            Customize Now
+                                        <button
+                                            onClick={() => navigate(`/product/${template._id}`)}
+                                            className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-xs uppercase tracking-wide hover:bg-blue-700 transition-all"
+                                        >
+                                            View Details
                                         </button>
                                     </div>
                                 </div>

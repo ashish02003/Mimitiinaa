@@ -13,6 +13,7 @@ import MobileCases from './pages/MobileCases';
 import Profile from './pages/Profile';
 import Cart from './pages/Cart';
 import ProductCategory from './pages/ProductCategory';
+import TemplateDetails from './pages/TemplateDetails';
 import { FaShoppingCart, FaUser } from 'react-icons/fa';
 import { Toaster } from 'react-hot-toast';
 import { CartProvider, useCart } from './context/CartContext';
@@ -94,6 +95,7 @@ function App() {
 
                             <Route path="/mobile-cases" element={<MobileCases />} />
                             <Route path="/category/:categoryName" element={<ProductCategory />} />
+                            <Route path="/product/:id" element={<TemplateDetails />} />
                             <Route path="/customize/:id" element={<CustomizeProduct />} />
                             <Route path="/profile" element={
                                 <ProtectedRoute>

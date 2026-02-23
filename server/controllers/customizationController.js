@@ -346,7 +346,10 @@ const createShapeMask = (shapeData) => {
             
         case 'custom':
             if (customPath) {
+                // Path from Fabric is often center-based (-w/2 to w/2); use viewBox so mask fits
+                const vb = [-width / 2, -height / 2, width, height].join(' ');
                 svgContent = `<path d="${customPath}" fill="white"/>`;
+                return `<svg width="${width}" height="${height}" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;
             } else {
                 svgContent = `<rect x="0" y="0" width="${width}" height="${height}" fill="white"/>`;
             }

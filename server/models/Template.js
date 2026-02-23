@@ -119,6 +119,10 @@ const templateSchema = new mongoose.Schema({
         type: String, // URL from Cloudinary
         required: true
     },
+    // Demo/sample image: product with sample photo in frame (shown on home so users see how their photo will look)
+    demoImageUrl: {
+        type: String
+    },
     overlayImageUrl: {
         type: String // The frame/design with transparency (optional)
     },
@@ -174,7 +178,14 @@ const templateSchema = new mongoose.Schema({
     moq: {
         type: Number,
         default: 1
+    },
+    // 🔥 NEW: Wrap type for cylindrical product preview (mug, bottle, etc.)
+    wrapType: {
+        type: String,
+        enum: ['none', 'mug', 'bottle'],
+        default: 'none'
     }
 }, { timestamps: true });
+
 
 module.exports = mongoose.model('Template', templateSchema);
