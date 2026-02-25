@@ -4,6 +4,12 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import {
+    FaSave, FaTimes, FaShapes, FaFont, FaImage, FaLayerGroup,
+    FaCog, FaArrowUp, FaArrowDown, FaTrash, FaLock, FaUnlock,
+    FaMagic, FaCloudUploadAlt, FaEdit, FaPlus, FaCubes, FaCoffee,
+    FaArrowLeft, FaEye
+} from 'react-icons/fa';
 
 const CreateTemplate = () => {
     const canvasRef = useRef(null);
@@ -68,7 +74,7 @@ const CreateTemplate = () => {
     const [tempObjects, setTempObjects] = useState([]);
     const [isEditingPoints, setIsEditingPoints] = useState(false);
     const editingShapeRef = useRef(null); // shape being edited (for add-point-on-segment)
-    const addPointOnSegmentRef = useRef(() => {});
+    const addPointOnSegmentRef = useRef(() => { });
     const bendingSegmentRef = useRef(null); // segment index when dragging line to make curve (screenshot behaviour)
     const hoveredSegmentRef = useRef(-1);
     const segmentOverlayRef = useRef(null); // highlight overlay for selected/hovered line
@@ -1497,15 +1503,15 @@ const CreateTemplate = () => {
             top: centerY,
             width: 200,
             height: 250,
-            fill: 'rgba(255, 228, 225, 0.6)',
-            stroke: '#ff6b6b',
-            strokeWidth: 3,
-            strokeDashArray: [10, 5],
+            fill: 'rgba(99, 102, 241, 0.1)',
+            stroke: '#6366f1',
+            strokeWidth: 2,
+            strokeDashArray: [8, 4],
             originX: 'center',
             originY: 'center',
             role: 'placeholder',
             shapeType: 'rect',
-            id: 'user_photo_area'
+            id: 'placeholder_' + Date.now()
         });
 
         canvas.add(rect);
@@ -1771,7 +1777,7 @@ const CreateTemplate = () => {
                 toast.success('Template Saved Successfully!');
             }
 
-            navigate('/admin/dashboard');
+            navigate('/admin');
 
         } catch (error) {
             console.error('SAVE ERROR:', error);
@@ -1784,318 +1790,425 @@ const CreateTemplate = () => {
     };
 
     return (
-        <div className="h-screen flex flex-col bg-gray-50">
-            {/* Top Toolbar */}
-            <div className="bg-white border-b px-4 py-3 flex items-center justify-between shadow-sm">
-                <h1 className="text-xl font-bold text-gray-800">{isEdit ? 'Edit Template' : 'Template Designer'}</h1>
-                <div className="flex gap-2">
-                    <button className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300" onClick={() => navigate('/admin/dashboard')} disabled={isSaving}>
-                        Cancel
-                    </button>
+        <div className="h-screen flex flex-col bg-[#F8FAFC]">
+            {/* Top Toolbar - More Premium Header */}
+            <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-sm z-30">
+                <div className="flex items-center gap-4">
                     <button
-                        className={`px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold flex items-center gap-2 ${(isSaving || isUploadingBg) ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        onClick={() => navigate('/admin')}
+                        className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
+                        title="Back to Dashboard"
+                    >
+                        <FaArrowLeft />
+                    </button>
+                    <div>
+                        <h1 className="text-lg font-bold text-slate-800 leading-tight">
+                            {isEdit ? 'Edit Template' : 'Template Designer'}
+                        </h1>
+                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider font-mono">
+                            {isEdit ? `ID: ${id}` : 'Create New Design Pattern'}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+                        onClick={() => navigate('/admin')}
+                        disabled={isSaving}
+                    >
+                        <FaTimes className="text-xs" /> Cancel
+                    </button>
+
+                    <div className="h-6 w-[1px] bg-slate-200 mx-1"></div>
+
+                    <button
+                        className={`flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-lg hover:shadow-emerald-200/50 active:scale-95 transition-all font-bold text-sm ${(isSaving || isUploadingBg) ? 'opacity-70 cursor-not-allowed' : ''}`}
                         onClick={saveTemplate}
                         disabled={isSaving || isUploadingBg}
                     >
                         {isSaving ? (
-                            <>
-                                <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                Saving {uploadProgress}%
-                            </>
+                            <div className="flex items-center gap-2">
+                                <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                                <span>Saving {uploadProgress}%</span>
+                            </div>
                         ) : isUploadingBg ? (
-                            <>
-                                <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                Uploading Background...
-                            </>
+                            <div className="flex items-center gap-2">
+                                <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                                <span>Uploading Background...</span>
+                            </div>
                         ) : (
-                            isEdit ? '💾 Update Template' : '💾 Save Template'
+                            <>
+                                <FaSave className="text-sm" />
+                                <span>{isEdit ? 'Update Template' : 'Save Template'}</span>
+                            </>
                         )}
                     </button>
                 </div>
-            </div>
+            </header>
 
-            <div className="flex flex-1 overflow-hidden">
-                {/* Left Sidebar - Tools */}
-                <div className="w-64 bg-white border-r overflow-y-auto">
-                    <div className="p-4 space-y-4">
-                        {/* Template Info */}
-                        <div>
-                            <h3 className="font-bold text-sm text-gray-700 mb-2">Template Info</h3>
-                            <input
-                                type="text"
-                                className="w-full border p-2 rounded text-sm mb-2"
-                                placeholder="Template Name"
-                                value={name}
-                                onChange={e => setName(e.target.value)}
-                            />
-                            <select className="w-full border p-2 rounded text-sm mb-2" value={category} onChange={e => setCategory(e.target.value)}>
-                                {categories.length > 0 ? (
-                                    categories.map(cat => (
-                                        <option key={cat._id} value={cat.name}>{cat.name}</option>
-                                    ))
-                                ) : (
-                                    <option value="">{category ? category : 'Loading...'}</option>
-                                )}
-                            </select>
-                            <input
-                                type="number"
-                                className="w-full border p-2 rounded text-sm"
-                                placeholder="Price ($)"
-                                value={price}
-                                onChange={e => setPrice(Number(e.target.value))}
-                            />
-                            <div className="mt-3 pt-3 border-t border-amber-200 bg-amber-50/80 rounded-lg p-3 border">
-                                <h4 className="font-bold text-sm text-amber-800 mb-1">📷 Demo Photo (Recommended)</h4>
-                                <p className="text-xs text-amber-700 mb-2">
-                                    <strong>Sirf woh photo</strong> upload karein jo shape ke andar aani hai (e.g. bacche ki photo). App aapke product + shape ke saath is photo ko jod kar <strong>demo image khud bana dega</strong> – user dashboard par product + shape ke andar yahi photo dikhegi.
-                                </p>
-                                <button
-                                    type="button"
-                                    className="w-full bg-amber-500 text-white p-2 rounded hover:bg-amber-600 text-xs font-medium"
-                                    onClick={() => demoImageInputRef.current?.click()}
-                                >
-                                    📷 Sample photo upload karein (demo auto banega)
-                                </button>
-                                <input type="file" ref={demoImageInputRef} hidden accept="image/*" onChange={handleDemoImageUpload} />
-                                {demoImageUrl && (
-                                    <div className="mt-2 space-y-1">
-                                        <div className="flex items-center gap-2">
-                                            <img src={demoImageUrl} alt="Demo" className="h-14 w-14 object-cover rounded border border-amber-200" />
-                                            <span className="text-xs text-green-700 font-medium">✓ Demo set – product + shape me photo</span>
-                                            <button type="button" className="text-xs text-red-600 hover:underline" onClick={() => setDemoImageUrl('')}>Remove</button>
-                                        </div>
-                                        <p className="text-[10px] text-amber-700">User dashboard par dikhane ke liye niche <strong>Save / Update Template</strong> zaroor dabayein.</p>
+            <div className="flex flex-1 overflow-hidden relative">
+                {/* Left Sidebar - Refined Design */}
+                <aside className="w-80 bg-white border-r border-slate-200 flex flex-col shadow-xl z-20">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        <div className="p-5 space-y-6">
+                            <section className="space-y-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                                        <FaCog className="text-sm" />
                                     </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 space-y-3">
-                            <h3 className="font-bold text-sm text-gray-700 mb-2">Product Specifications</h3>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-gray-400">Variant No</label>
-                                <input
-                                    type="text"
-                                    className="w-full border p-2 rounded text-sm"
-                                    placeholder="e.g., 1.1"
-                                    value={variantNo}
-                                    onChange={e => setVariantNo(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-gray-400">Product Size</label>
-                                <input
-                                    type="text"
-                                    className="w-full border p-2 rounded text-sm"
-                                    placeholder="e.g., 11 Oz / 750 ML"
-                                    value={productSize}
-                                    onChange={e => setProductSize(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-gray-400">Print Size</label>
-                                <input
-                                    type="text"
-                                    className="w-full border p-2 rounded text-sm"
-                                    placeholder="e.g., 19.6 x 9 cm"
-                                    value={printSize}
-                                    onChange={e => setPrintSize(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-gray-400">MOQ</label>
-                                <input
-                                    type="number"
-                                    className="w-full border p-2 rounded text-sm"
-                                    value={moq}
-                                    onChange={e => setMoq(Number(e.target.value))}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Tool Tabs */}
-                        <div className="flex border-b">
-                            <button
-                                className={`flex-1 py-2 text-xs font-medium ${activeTab === 'background' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-                                onClick={() => setActiveTab('background')}
-                            >
-                                Background
-                            </button>
-                            <button
-                                className={`flex-1 py-2 text-xs font-medium ${activeTab === 'shapes' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-                                onClick={() => setActiveTab('shapes')}
-                            >
-                                Shapes
-                            </button>
-                            <button
-                                className={`flex-1 py-2 text-xs font-medium ${activeTab === 'text' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-                                onClick={() => setActiveTab('text')}
-                            >
-                                Text
-                            </button>
-                            <button
-                                className={`flex-1 py-2 text-xs font-medium ${activeTab === 'elements' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-                                onClick={() => setActiveTab('elements')}
-                            >
-                                Elements
-                            </button>
-                            <button
-                                className={`flex-1 py-2 text-xs font-medium ${activeTab === 'mug' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-                                onClick={() => setActiveTab('mug')}
-                            >
-                                ☕ Mug/Wrap
-                            </button>
-                        </div>
-
-                        {/* Tool Content */}
-                        <div className="space-y-2">
-                            {activeTab === 'background' && (
-                                <div>
-                                    <button
-                                        className="w-full bg-blue-500 text-white p-3 rounded hover:bg-blue-600 text-sm font-medium"
-                                        onClick={() => bgImageInputRef.current.click()}
-                                    >
-                                        📷 Upload Product Image
-                                    </button>
-                                    <input type="file" ref={bgImageInputRef} hidden onChange={handleBackgroundUpload} accept="image/*" />
-                                    {backgroundImageUrl && (
-                                        <p className="text-xs text-green-600 mt-2">✓ Background uploaded</p>
-                                    )}
+                                    <h3 className="font-bold text-sm text-slate-700">Template Base Info</h3>
                                 </div>
-                            )}
 
-                            {activeTab === 'shapes' && (
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button className="p-3 border rounded hover:bg-gray-50 text-sm" onClick={() => addShape('rect')}>
-                                        ⬜ Rectangle
-                                    </button>
-                                    <button className="p-3 border rounded hover:bg-gray-50 text-sm" onClick={() => addShape('rounded')}>
-                                        🔲 Rounded
-                                    </button>
-                                    <button className="p-3 border rounded hover:bg-gray-50 text-sm" onClick={() => addShape('circle')}>
-                                        ⚫ Circle
-                                    </button>
-                                    <button className="p-3 border rounded hover:bg-gray-50 text-sm" onClick={() => addShape('triangle')}>
-                                        🔺 Triangle
-                                    </button>
-                                    <button className="p-3 border rounded hover:bg-gray-50 text-sm" onClick={() => addShape('star')}>
-                                        ⭐ Star
-                                    </button>
-                                    <button className="p-3 border rounded hover:bg-gray-50 text-sm" onClick={() => addShape('heart')}>
-                                        ❤️ Heart
-                                    </button>
-                                    <button
-                                        className="p-3 border bg-sky-50 border-sky-300 hover:bg-sky-100 rounded text-sm font-bold text-sky-700"
-                                        onClick={() => addShape('mug-wrap')}
-                                    >
-                                        ☕ Mug Shape
-                                    </button>
-                                    <button
-                                        className="p-3 border bg-purple-50 border-purple-300 hover:bg-purple-100 rounded text-sm font-bold text-purple-700"
-                                        onClick={() => addShape('wave')}
-                                    >
-                                        🌊 Wave
-                                    </button>
-                                    <button className="p-3 border bg-blue-50 border-blue-200 rounded hover:bg-blue-100 text-sm font-bold text-blue-700 col-span-2" onClick={startCustomShape}>
-                                        ✏️ Free Draw (point by point)
-                                    </button>
-                                    <label className="col-span-2 flex items-center gap-2 p-2 bg-gray-50 rounded border cursor-pointer">
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Template Name</label>
                                         <input
-                                            type="checkbox"
-                                            checked={useSmoothCurve}
-                                            onChange={(e) => setUseSmoothCurve(e.target.checked)}
+                                            type="text"
+                                            className="w-full bg-slate-50 border-0 focus:ring-2 focus:ring-indigo-500 p-3 rounded-xl text-sm transition-all placeholder:text-slate-300 font-medium"
+                                            placeholder="Enter design name..."
+                                            value={name}
+                                            onChange={e => setName(e.target.value)}
                                         />
-                                        <span className="text-xs font-medium">Smooth curve (uncheck = shape exactly on selected points, straight edges)</span>
-                                    </label>
-                                </div>
-                            )}
+                                    </div>
 
-                            {activeTab === 'text' && (
-                                <div>
-                                    <button className="w-full bg-indigo-500 text-white p-3 rounded hover:bg-indigo-600 text-sm font-medium" onClick={addText}>
-                                        T Add Text
-                                    </button>
-                                </div>
-                            )}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Category</label>
+                                            <select
+                                                className="w-full bg-slate-50 border-0 focus:ring-2 focus:ring-indigo-500 p-3 rounded-xl text-sm transition-all font-medium appearance-none"
+                                                value={category}
+                                                onChange={e => setCategory(e.target.value)}
+                                            >
+                                                {categories.length > 0 ? (
+                                                    categories.map(cat => (
+                                                        <option key={cat._id} value={cat.name}>{cat.name}</option>
+                                                    ))
+                                                ) : (
+                                                    <option value="">{category ? category : 'Loading...'}</option>
+                                                )}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Base Price</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">₹</span>
+                                                <input
+                                                    type="number"
+                                                    className="w-full bg-slate-50 border-0 focus:ring-2 focus:ring-indigo-500 p-3 pl-7 rounded-xl text-sm transition-all font-bold"
+                                                    placeholder="0"
+                                                    value={price}
+                                                    onChange={e => setPrice(Number(e.target.value))}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
 
-                            {activeTab === 'elements' && (
-                                <div className="space-y-2">
+                                    <div className="mt-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-100 shadow-sm relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <FaMagic className="text-4xl text-amber-600" />
+                                        </div>
+                                        <h4 className="font-bold text-xs text-amber-800 mb-1 flex items-center gap-2">
+                                            <FaEye className="text-sm" /> Smart Demo Preview
+                                        </h4>
+                                        <p className="text-[10px] text-amber-700/80 leading-relaxed mb-3">
+                                            Upload a sample photo (e.g. customer's face) to see how it looks inside the template areas.
+                                        </p>
+
+                                        {!demoImageUrl ? (
+                                            <button
+                                                type="button"
+                                                className="w-full bg-white text-amber-600 py-2.5 rounded-xl border border-amber-200 hover:border-amber-400 hover:bg-amber-50 text-[11px] font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                                                onClick={() => demoImageInputRef.current?.click()}
+                                            >
+                                                <FaCloudUploadAlt /> Choose Sample
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center gap-3 bg-white/60 p-2 rounded-xl border border-amber-200/50">
+                                                <div className="relative h-12 w-12 rounded-lg overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+                                                    <img src={demoImageUrl} alt="Demo" className="h-full w-full object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl hover:bg-red-600"
+                                                        onClick={() => setDemoImageUrl('')}
+                                                    >
+                                                        <FaTimes className="text-[8px]" />
+                                                    </button>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[10px] font-bold text-amber-900 truncate">Sample attached</p>
+                                                    <p className="text-[9px] text-amber-600">Visible in dashoard</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <input type="file" ref={demoImageInputRef} hidden accept="image/*" onChange={handleDemoImageUpload} />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-slate-200 text-slate-700 rounded-lg">
+                                        <FaLayerGroup className="text-sm" />
+                                    </div>
+                                    <h3 className="font-bold text-sm text-slate-700">Product Specs</h3>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">Variant No</label>
+                                        <input
+                                            type="text"
+                                            className="w-full bg-white border border-slate-100 focus:ring-2 focus:ring-indigo-500 p-2 rounded-xl text-xs transition-all font-bold"
+                                            placeholder="1.1"
+                                            value={variantNo}
+                                            onChange={e => setVariantNo(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">MOQ</label>
+                                        <input
+                                            type="number"
+                                            className="w-full bg-white border border-slate-100 focus:ring-2 focus:ring-indigo-500 p-2 rounded-xl text-xs transition-all font-bold text-center"
+                                            value={moq}
+                                            onChange={e => setMoq(Number(e.target.value))}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">Product Size</label>
+                                        <input
+                                            type="text"
+                                            className="w-full bg-white border border-slate-100 focus:ring-2 focus:ring-indigo-500 p-2 rounded-xl text-xs transition-all font-medium"
+                                            placeholder="e.g., 11 Oz / 750 ML"
+                                            value={productSize}
+                                            onChange={e => setProductSize(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">Print Area</label>
+                                        <input
+                                            type="text"
+                                            className="w-full bg-white border border-slate-100 focus:ring-2 focus:ring-indigo-500 p-2 rounded-xl text-xs transition-all font-medium"
+                                            placeholder="e.g., 19.6 x 9 cm"
+                                            value={printSize}
+                                            onChange={e => setPrintSize(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Tool Tabs - Modern Segmented Control */}
+                            <div className="bg-slate-100 p-1.5 rounded-2xl flex items-center gap-1">
+                                {[
+                                    { id: 'background', icon: FaImage, label: 'Bg' },
+                                    { id: 'shapes', icon: FaShapes, label: 'Shape' },
+                                    { id: 'text', icon: FaFont, label: 'Text' },
+                                    { id: 'elements', icon: FaCubes, label: 'Icons' },
+                                    { id: 'mug', icon: FaCoffee, label: '3D' }
+                                ].map(tab => (
                                     <button
-                                        className="w-full bg-purple-500 text-white p-3 rounded hover:bg-purple-600 text-sm font-medium"
-                                        onClick={addPlaceholder}
+                                        key={tab.id}
+                                        className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl transition-all ${activeTab === tab.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        onClick={() => setActiveTab(tab.id)}
                                     >
-                                        📷 Add Photo Placeholder
+                                        <tab.icon className={`text-sm mb-1 ${activeTab === tab.id ? 'scale-110' : ''} transition-transform`} />
+                                        <span className="text-[9px] font-bold uppercase tracking-tighter">{tab.label}</span>
                                     </button>
-                                    <button
-                                        className="w-full bg-pink-500 text-white p-3 rounded hover:bg-pink-600 text-sm font-medium"
-                                        onClick={() => graphicInputRef.current.click()}
-                                    >
-                                        🎨 Upload Graphic
-                                    </button>
-                                    <input type="file" ref={graphicInputRef} hidden onChange={handleGraphicUpload} accept="image/*" />
-                                </div>
-                            )}
+                                ))}
+                            </div>
 
-                            {activeTab === 'mug' && (
-                                <div className="space-y-4">
-                                    <div className="bg-sky-50 p-4 rounded-xl border-2 border-sky-200">
-                                        <h3 className="text-sm font-bold text-sky-800 mb-2">☕ Mug Wrap Tools</h3>
+                            <div className="min-h-[200px] bg-slate-50/50 rounded-2xl p-4 border border-slate-100/50">
+                                {activeTab === 'background' && (
+                                    <div className="space-y-4">
                                         <button
-                                            className="w-full bg-sky-600 text-white p-3 rounded-lg hover:bg-sky-700 text-sm font-bold shadow-md mb-3"
-                                            onClick={addMugWrapPlaceholder}
+                                            className="w-full bg-white border-2 border-dashed border-slate-200 text-slate-500 p-8 rounded-2xl hover:border-indigo-400 hover:text-indigo-500 hover:bg-indigo-50/30 transition-all flex flex-col items-center gap-3 group"
+                                            onClick={() => bgImageInputRef.current.click()}
                                         >
-                                            ✨ Create Automatic Mug Area
+                                            <div className="p-3 bg-slate-100 rounded-full group-hover:bg-indigo-100 transition-colors">
+                                                <FaCloudUploadAlt className="text-2xl" />
+                                            </div>
+                                            <span className="text-xs font-bold uppercase tracking-wider">Select Product Image</span>
                                         </button>
-                                        <p className="text-[10px] text-sky-600 leading-tight">
-                                            This creates a special curved area that matches a mug surface.
-                                        </p>
+                                        <input type="file" ref={bgImageInputRef} hidden onChange={handleBackgroundUpload} accept="image/*" />
+                                        {backgroundImageUrl && (
+                                            <div className="flex items-center gap-2 p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 animate-fadeIn transition-all">
+                                                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider">Background Ready</span>
+                                            </div>
+                                        )}
                                     </div>
+                                )}
 
-                                    <button
-                                        className="w-full py-2 px-3 border-2 border-dashed border-sky-300 rounded text-xs text-sky-700 hover:bg-sky-50 font-bold mb-4"
-                                        onClick={addMugBodyHelper}
-                                    >
-                                        ➕ Add Mug Outline Helper
-                                    </button>
+                                {activeTab === 'shapes' && (
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[
+                                                { id: 'rect', label: 'Box', icon: '⬜' },
+                                                { id: 'rounded', label: 'Round', icon: '🔲' },
+                                                { id: 'circle', label: 'Circle', icon: '⚫' },
+                                                { id: 'triangle', label: 'Delta', icon: '🔺' },
+                                                { id: 'star', label: 'Hero', icon: '⭐' },
+                                                { id: 'heart', label: 'Love', icon: '❤️' }
+                                            ].map(s => (
+                                                <button
+                                                    key={s.id}
+                                                    className="p-3 bg-white border border-slate-100 rounded-xl hover:shadow-md hover:border-indigo-200 hover:scale-[1.02] transition-all text-xs font-bold flex flex-col items-center gap-1"
+                                                    onClick={() => addShape(s.id)}
+                                                >
+                                                    <span className="text-lg">{s.icon}</span>
+                                                    <span className="text-[10px] text-slate-500 uppercase tracking-tighter">{s.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
 
-                                    <div className="bg-amber-50 p-4 rounded-xl border-2 border-amber-200">
-                                        <label className="text-[10px] font-black uppercase text-amber-700 block mb-2">Live Preview Settings</label>
-                                        <select
-                                            className="w-full border-2 border-amber-300 p-2 rounded text-sm font-bold text-amber-900 bg-white"
-                                            value={wrapType}
-                                            onChange={e => setWrapType(e.target.value)}
+                                        <div className="h-[1px] bg-slate-200 my-1"></div>
+
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                className="p-3 bg-sky-50 border border-sky-100 hover:bg-sky-100 rounded-xl text-xs font-bold text-sky-700 flex flex-col items-center gap-1"
+                                                onClick={() => addShape('mug-wrap')}
+                                            >
+                                                <span className="text-lg">☕</span>
+                                                <span className="text-[10px] uppercase">Mug Wrap</span>
+                                            </button>
+                                            <button
+                                                className="p-3 bg-purple-50 border border-purple-100 hover:bg-purple-100 rounded-xl text-xs font-bold text-purple-700 flex flex-col items-center gap-1"
+                                                onClick={() => addShape('wave')}
+                                            >
+                                                <span className="text-lg">🌊</span>
+                                                <span className="text-[10px] uppercase">Flow Wave</span>
+                                            </button>
+                                        </div>
+
+                                        <button
+                                            className="w-full p-4 bg-indigo-600 text-white rounded-xl hover:shadow-lg hover:shadow-indigo-100 transition-all font-bold text-xs flex items-center justify-center gap-2 group"
+                                            onClick={startCustomShape}
                                         >
-                                            <option value="none">None (Flat Preview)</option>
-                                            <option value="mug">☕ Realistic Mug (3D)</option>
-                                            <option value="bottle">🫙 Bottle/Sipper (3D)</option>
-                                        </select>
-                                        <p className="text-[10px] text-amber-600 mt-2">
-                                            <b>Note:</b> Choose "Realistic Mug" to show the 3D 'Smile' curve to users.
-                                        </p>
+                                            <FaEdit className="group-hover:rotate-12 transition-transform" />
+                                            <span>DRAW CUSTOM SHAPE</span>
+                                        </button>
+
+                                        <label className="flex items-center gap-3 p-3 bg-slate-100 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                                                checked={useSmoothCurve}
+                                                onChange={(e) => setUseSmoothCurve(e.target.checked)}
+                                            />
+                                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider leading-tight">Apply Smooth Curves</span>
+                                        </label>
+                                    </div>
+                                )}
+
+                                {activeTab === 'text' && (
+                                    <div className="space-y-4">
+                                        <button
+                                            className="w-full bg-indigo-500 text-white p-4 rounded-2xl hover:bg-indigo-600 shadow-lg shadow-indigo-100 transition-all font-bold text-sm flex items-center justify-center gap-3 group"
+                                            onClick={addText}
+                                        >
+                                            <div className="p-2 bg-white/20 rounded-lg group-hover:scale-110 transition-transform">
+                                                <FaFont className="text-white" />
+                                            </div>
+                                            <span>INSERT NEW TEXT</span>
+                                        </button>
+                                        <p className="text-[10px] text-slate-400 text-center font-medium font-serif italic">"Design is thinking made visual"</p>
+                                    </div>
+                                )}
+
+                                {activeTab === 'elements' && (
+                                    <div className="space-y-3">
+                                        <button
+                                            className="w-full bg-white border border-slate-200 p-4 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 shadow-sm transition-all flex items-center gap-3 group"
+                                            onClick={addPlaceholder}
+                                        >
+                                            <div className="p-2 bg-indigo-50 text-indigo-500 rounded-lg group-hover:scale-110 transition-transform">
+                                                <FaImage />
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-[11px] font-bold text-slate-800 tracking-tight">Photo Area</p>
+                                                <p className="text-[9px] text-slate-400 uppercase tracking-tighter">Drag to place holder</p>
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            className="w-full bg-white border border-slate-200 p-4 rounded-xl hover:bg-pink-50 hover:border-pink-200 shadow-sm transition-all flex items-center gap-3 group"
+                                            onClick={() => graphicInputRef.current.click()}
+                                        >
+                                            <div className="p-2 bg-pink-50 text-pink-500 rounded-lg group-hover:scale-110 transition-transform">
+                                                <FaPlus />
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-[11px] font-bold text-slate-800 tracking-tight">Upload Asset</p>
+                                                <p className="text-[9px] text-slate-400 uppercase tracking-tighter">PNG or SVG elements</p>
+                                            </div>
+                                        </button>
+                                        <input type="file" ref={graphicInputRef} hidden onChange={handleGraphicUpload} accept="image/*" />
+                                    </div>
+                                )}
+
+                                {activeTab === 'mug' && (
+                                    <div className="space-y-4">
+                                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-5 rounded-3xl shadow-lg relative overflow-hidden group">
+                                            <div className="absolute -top-4 -right-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                                                <FaCoffee className="text-7xl text-white" />
+                                            </div>
+                                            <h3 className="text-[9px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-3">Live Engine</h3>
+                                            <button
+                                                className="w-full bg-white text-indigo-700 p-3 rounded-2xl hover:bg-slate-50 active:scale-95 transition-all text-xs font-black shadow-md flex items-center justify-center gap-2"
+                                                onClick={addMugWrapPlaceholder}
+                                            >
+                                                <FaMagic /> START AUTO-WRAP
+                                            </button>
+                                        </div>
+
+                                        <div className="bg-slate-100 p-4 rounded-2xl border border-slate-200">
+                                            <label className="text-[9px] font-black uppercase text-slate-400 block mb-2 tracking-widest">Preview Mode</label>
+                                            <div className="relative">
+                                                <select
+                                                    className="w-full bg-white border-0 focus:ring-2 focus:ring-indigo-500 p-3 rounded-xl text-xs font-bold text-slate-700 appearance-none shadow-sm"
+                                                    value={wrapType}
+                                                    onChange={e => setWrapType(e.target.value)}
+                                                >
+                                                    <option value="none">Flat Preview</option>
+                                                    <option value="mug">☕ 3D Mug Model</option>
+                                                    <option value="bottle">🫙 Sipper Bottle</option>
+                                                </select>
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none">
+                                                    <FaArrowDown className="text-[8px]" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            className="w-full py-3 px-2 border border-slate-200 rounded-xl text-[9px] font-black uppercase text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all flex items-center justify-center gap-1"
+                                            onClick={addMugBodyHelper}
+                                        >
+                                            <FaLayerGroup /> Add Reference Template
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Layer Controls & Properties */}
+                            {/* Property Inspector - Premium Design */}
+                            {selectedObject && (
+                                <div className="pt-6 border-t border-slate-100 space-y-6 animate-fadeIn">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Transform</h3>
+                                        <div className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[9px] font-bold">
+                                            {selectedObject.type.toUpperCase()}
+                                        </div>
                                     </div>
 
-                                    <button
-                                        className="w-full py-2 px-3 border-2 border-dashed border-gray-300 rounded text-xs text-gray-500 hover:bg-gray-50"
-                                        onClick={() => addShape('mug-wrap')}
-                                    >
-                                        + Add Manual Curved Shape
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Layer Controls & Properties */}
-                        {selectedObject && (
-                            <div className="border-t pt-4 space-y-4 text-left">
-
-                                <div>
-                                    <h3 className="font-bold text-sm text-gray-700 mb-2">Adjust Size & Angle</h3>
-                                    <div className="grid grid-cols-2 gap-2 mb-2">
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] text-gray-500 uppercase">Width</label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[9px] font-bold text-slate-400 uppercase">Width (px)</label>
                                             <input
                                                 type="number"
-                                                className="w-full border p-1 rounded text-xs"
+                                                className="w-full bg-slate-50 border-0 focus:ring-2 focus:ring-indigo-500 p-2.5 rounded-xl text-xs font-bold transition-all"
                                                 value={objProps.width}
                                                 onChange={(e) => {
                                                     const val = Number(e.target.value);
@@ -2104,11 +2217,11 @@ const CreateTemplate = () => {
                                                 }}
                                             />
                                         </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] text-gray-500 uppercase">Height</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[9px] font-bold text-slate-400 uppercase">Height (px)</label>
                                             <input
                                                 type="number"
-                                                className="w-full border p-1 rounded text-xs"
+                                                className="w-full bg-slate-50 border-0 focus:ring-2 focus:ring-indigo-500 p-2.5 rounded-xl text-xs font-bold transition-all"
                                                 value={objProps.height}
                                                 onChange={(e) => {
                                                     const val = Number(e.target.value);
@@ -2118,225 +2231,277 @@ const CreateTemplate = () => {
                                             />
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3 mt-3">
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] text-gray-500 uppercase">Color / Fill</label>
-                                            <input
-                                                type="color"
-                                                className="w-full h-8 rounded border p-0.5 cursor-pointer shadow-sm"
-                                                value={objProps.fill && typeof objProps.fill === 'string' ? objProps.fill : '#000000'}
-                                                onChange={(e) => updateProperty('fill', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] text-gray-500 uppercase">Opacity ({Math.round((objProps.opacity || 1) * 100)}%)</label>
-                                            <input
-                                                type="range"
-                                                min="0.1"
-                                                max="1"
-                                                step="0.05"
-                                                className="w-full"
-                                                value={objProps.opacity || 1}
-                                                onChange={(e) => updateProperty('opacity', parseFloat(e.target.value))}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
 
-                                {/* Text Styles Section - Only for text objects */}
-                                {(selectedObject.type === 'i-text' || selectedObject.type === 'text') && (
-                                    <div className="mt-4 border-t pt-4">
-                                        <h3 className="font-bold text-sm text-gray-700 mb-2">Text Styles</h3>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <label className="text-[10px] text-gray-500 uppercase w-12">Size</label>
-                                                <input
-                                                    type="number"
-                                                    className="flex-1 border p-1 rounded text-xs"
-                                                    value={objProps.fontSize}
-                                                    onChange={(e) => updateProperty('fontSize', Number(e.target.value))}
-                                                />
+                                    <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Appearance</label>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-bold text-slate-400">Main Color</label>
+                                                <div className="relative h-10 w-full group">
+                                                    <input
+                                                        type="color"
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                        value={objProps.fill && typeof objProps.fill === 'string' ? objProps.fill : '#000000'}
+                                                        onChange={(e) => updateProperty('fill', e.target.value)}
+                                                    />
+                                                    <div
+                                                        className="w-full h-full rounded-xl border-2 border-white shadow-sm ring-1 ring-slate-200 flex items-center justify-center transition-transform group-hover:scale-105"
+                                                        style={{ backgroundColor: objProps.fill && typeof objProps.fill === 'string' ? objProps.fill : '#000000' }}
+                                                    >
+                                                        <span className="text-[9px] font-mono text-white mix-blend-difference opacity-50">HEX</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <label className="text-[10px] text-gray-500 uppercase w-12">Font</label>
-                                                <select
-                                                    className="flex-1 border p-1 rounded text-xs"
-                                                    value={objProps.fontFamily}
-                                                    onChange={(e) => updateProperty('fontFamily', e.target.value)}
-                                                >
-                                                    {fonts.map(font => (
-                                                        <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="mt-4 border-t pt-4">
-                                    <h3 className="font-bold text-sm text-gray-700 mb-2">Layer Order & Locking</h3>
-
-
-                                    <div className="flex items-center gap-2 mb-1 bg-gray-50 p-2 rounded border">
-                                        <input
-                                            type="checkbox"
-                                            id="lockObj"
-                                            className="w-4 h-4 cursor-pointer"
-                                            checked={objProps.locked}
-                                            onChange={(e) => updateProperty('locked', e.target.checked)}
-                                        />
-                                        <label htmlFor="lockObj" className="text-xs font-bold text-gray-700 cursor-pointer flex items-center gap-1">
-                                            {objProps.locked ? '🔒 Locked' : '🔓 Unlocked'}
-                                        </label>
-                                    </div>
-                                    <div className="flex items-center gap-2 mb-3 bg-indigo-50 p-2 rounded border border-indigo-200">
-                                        <input
-                                            type="checkbox"
-                                            id="isPlaceholder"
-                                            className="w-4 h-4 cursor-pointer"
-                                            checked={objProps.role === 'placeholder'}
-                                            onChange={(e) => {
-                                                const isPlaceholder = e.target.checked;
-                                                updateProperty('role', isPlaceholder ? 'placeholder' : null);
-
-                                                if (isPlaceholder) {
-                                                    // Auto-detect shapeType from Fabric object type if not already set
-                                                    if (!selectedObject.shapeType) {
-                                                        let autoType = 'rect';
-                                                        if (selectedObject.type === 'circle') autoType = 'circle';
-                                                        else if (selectedObject.type === 'triangle') autoType = 'triangle';
-                                                        else if (selectedObject.type === 'polygon') {
-                                                            // Detect star by point count (5-pointed star = 10 points)
-                                                            autoType = (selectedObject.points && selectedObject.points.length === 10) ? 'star' : 'polygon';
-                                                        }
-                                                        else if (selectedObject.type === 'path') autoType = 'heart'; // paths are typically heart/custom
-                                                        else if (selectedObject.type === 'rect') autoType = selectedObject.rx ? 'rounded' : 'rect';
-                                                        // Set shapeType on both Fabric internal state AND the instance directly
-                                                        selectedObject.set('shapeType', autoType);
-                                                        selectedObject.shapeType = autoType;
-                                                    }
-                                                    // Ensure ID is set for this placeholder
-                                                    if (!selectedObject.id || selectedObject.id === '') {
-                                                        const newId = 'placeholder_' + Date.now();
-                                                        selectedObject.set('id', newId);
-                                                        selectedObject.id = newId;
-                                                    }
-                                                    // Apply placeholder visual style
-                                                    updateProperty('fill', 'rgba(255, 228, 225, 0.6)');
-                                                    updateProperty('stroke', '#ff6b6b');
-                                                    updateProperty('strokeWidth', 3);
-                                                    updateProperty('strokeDashArray', [10, 5]);
-                                                    updateProperty('locked', false);
-                                                } else {
-                                                    // Revert to default style
-                                                    updateProperty('stroke', '#333');
-                                                    updateProperty('strokeWidth', 2);
-                                                    updateProperty('strokeDashArray', null);
-                                                    updateProperty('fill', '#cccccc');
-                                                }
-                                            }}
-                                        />
-                                        <div className="flex flex-col">
-                                            <label htmlFor="isPlaceholder" className="text-xs font-bold text-indigo-700 cursor-pointer flex items-center gap-1">
-                                                📷 Is Placeholder?
-                                            </label>
-                                            <span className="text-[10px] text-gray-500">Allow users to upload photos here</span>
-                                        </div>
-                                    </div>
-
-                                    {selectedObject.type === 'polygon' && (
-                                        <div className="bg-orange-50 p-3 rounded-lg border border-orange-100 mb-3 space-y-2">
-                                            <h3 className="font-bold text-[10px] text-orange-800 uppercase">Polygon Settings</h3>
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] text-gray-500 flex justify-between">
-                                                    <span>Corner Rounding</span>
-                                                    <span>{selectedObject.cornerRadius || 0}px</span>
-                                                </label>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-bold text-slate-400">Opacity ({Math.round((objProps.opacity || 1) * 100)}%)</label>
                                                 <input
                                                     type="range"
-                                                    min="0"
-                                                    max="50"
-                                                    className="w-full h-1.5 bg-orange-200 rounded-lg appearance-none cursor-pointer"
-                                                    value={selectedObject.cornerRadius || 0}
-                                                    onChange={(e) => {
-                                                        const val = Number(e.target.value);
-                                                        selectedObject.set('cornerRadius', val);
-                                                        // We'll use this for path generation
-                                                        canvas.renderAll();
-                                                    }}
+                                                    min="0.1"
+                                                    max="1"
+                                                    step="0.05"
+                                                    className="w-full accent-indigo-600"
+                                                    value={objProps.opacity || 1}
+                                                    onChange={(e) => updateProperty('opacity', parseFloat(e.target.value))}
                                                 />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {(selectedObject.type === 'i-text' || selectedObject.type === 'text') && (
+                                        <div className="space-y-4 pt-2">
+                                            <div className="h-[1px] bg-slate-100"></div>
+                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Typography</h3>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <div className="col-span-1 space-y-1.5">
+                                                    <label className="text-[9px] font-bold text-slate-400 uppercase">Size</label>
+                                                    <input
+                                                        type="number"
+                                                        className="w-full bg-slate-50 border-0 focus:ring-2 focus:ring-indigo-500 p-2 rounded-xl text-xs font-black"
+                                                        value={objProps.fontSize}
+                                                        onChange={(e) => updateProperty('fontSize', Number(e.target.value))}
+                                                    />
+                                                </div>
+                                                <div className="col-span-2 space-y-1.5">
+                                                    <label className="text-[9px] font-bold text-slate-400 uppercase">Font Family</label>
+                                                    <select
+                                                        className="w-full bg-slate-50 border-0 focus:ring-2 focus:ring-indigo-500 p-2 rounded-xl text-xs font-bold"
+                                                        value={objProps.fontFamily}
+                                                        onChange={(e) => updateProperty('fontFamily', e.target.value)}
+                                                    >
+                                                        {fonts.map(font => (
+                                                            <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
 
-                                    <div className="flex items-center gap-2 mb-3 bg-blue-50 p-2 rounded border border-blue-200">
-                                        <input
-                                            type="checkbox"
-                                            id="snapGrid"
-                                            className="w-4 h-4 cursor-pointer"
-                                            checked={objProps.snapToGrid || false}
-                                            onChange={(e) => {
-                                                updateProperty('snapToGrid', e.target.checked);
-                                            }}
-                                        />
-                                        <label htmlFor="snapGrid" className="text-xs font-bold text-blue-700 cursor-pointer">
-                                            📏 Snap to Grid (10px)
-                                        </label>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 mb-3">
-                                        {(selectedObject.type === 'polygon' || selectedObject.type === 'path' || selectedObject.type === 'rect') && (
+                                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                                        <div className="flex items-center gap-2 p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 transition-all hover:bg-indigo-50 group">
+                                            <div className="relative">
+                                                <input
+                                                    type="checkbox"
+                                                    id="isPlaceholder"
+                                                    className="w-5 h-5 rounded-lg border-2 border-indigo-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                                                    checked={objProps.role === 'placeholder'}
+                                                    onChange={(e) => {
+                                                        const isPlaceholder = e.target.checked;
+                                                        updateProperty('role', isPlaceholder ? 'placeholder' : null);
+
+                                                        if (isPlaceholder) {
+                                                            if (!selectedObject.shapeType) {
+                                                                let autoType = 'rect';
+                                                                if (selectedObject.type === 'circle') autoType = 'circle';
+                                                                else if (selectedObject.type === 'triangle') autoType = 'triangle';
+                                                                else if (selectedObject.type === 'polygon') {
+                                                                    autoType = (selectedObject.points && selectedObject.points.length === 10) ? 'star' : 'polygon';
+                                                                }
+                                                                else if (selectedObject.type === 'path') autoType = 'heart';
+                                                                else if (selectedObject.type === 'rect') autoType = selectedObject.rx ? 'rounded' : 'rect';
+                                                                selectedObject.set('shapeType', autoType);
+                                                                selectedObject.shapeType = autoType;
+                                                            }
+                                                            if (!selectedObject.id || selectedObject.id === '') {
+                                                                const newId = 'placeholder_' + Date.now();
+                                                                selectedObject.set('id', newId);
+                                                                selectedObject.id = newId;
+                                                            }
+                                                            updateProperty('fill', 'rgba(99, 102, 241, 0.1)');
+                                                            updateProperty('stroke', '#6366f1');
+                                                            updateProperty('strokeWidth', 2);
+                                                            updateProperty('strokeDashArray', [8, 4]);
+                                                            updateProperty('locked', false);
+                                                        } else {
+                                                            updateProperty('stroke', '#333');
+                                                            updateProperty('strokeWidth', 1);
+                                                            updateProperty('strokeDashArray', null);
+                                                            updateProperty('fill', '#e2e8f0');
+                                                        }
+                                                    }}
+                                                />
+                                                <FaImage className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] pointer-events-none transition-opacity ${objProps.role === 'placeholder' ? 'opacity-100 text-white' : 'opacity-0'}`} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <label htmlFor="isPlaceholder" className="text-[11px] font-black text-indigo-900 cursor-pointer block leading-none mb-1">
+                                                    Interaction Area
+                                                </label>
+                                                <span className="text-[9px] text-indigo-400 font-medium uppercase tracking-tight italic">Click to upload enabled</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
                                             <button
-                                                className={`p-2 border rounded text-xs font-bold ${isEditingPoints ? 'bg-green-100 border-green-400 text-green-700' : 'bg-orange-50 border-orange-200 text-orange-700'}`}
-                                                onClick={editShapePoints}
+                                                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${objProps.locked ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'}`}
+                                                onClick={() => updateProperty('locked', !objProps.locked)}
                                             >
-                                                {isEditingPoints ? '✅ Finish Editing' : '🎯 Edit Points (stretch)'}
+                                                {objProps.locked ? <FaLock className="text-sm mb-1" /> : <FaUnlock className="text-sm mb-1" />}
+                                                <span className="text-[9px] font-black uppercase tracking-widest">{objProps.locked ? 'Locked' : 'Unlocked'}</span>
                                             </button>
-                                        )}
-                                        {isDrawingMode && (
-                                            <button className="p-2 bg-red-100 text-red-600 border border-red-200 rounded text-xs font-bold" onClick={cancelDrawing}>
-                                                ❌ Cancel Draw
+                                            <button
+                                                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${objProps.snapToGrid ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'}`}
+                                                onClick={() => updateProperty('snapToGrid', !objProps.snapToGrid)}
+                                            >
+                                                <FaMagic className="text-sm mb-1" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest">Snap-10px</span>
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {(selectedObject.type === 'polygon' || selectedObject.type === 'path' || selectedObject.type === 'rect') && (
+                                                <button
+                                                    className={`py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm ${isEditingPoints ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-white hover:bg-black'}`}
+                                                    onClick={editShapePoints}
+                                                >
+                                                    {isEditingPoints ? '✓ Save Points' : '🎯 Shape Edit'}
+                                                </button>
+                                            )}
+                                            {isDrawingMode && (
+                                                <button className="py-3 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 transition-all font-mono" onClick={cancelDrawing}>
+                                                    CANCEL DRAW
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <button className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all text-[10px] font-bold flex items-center justify-center gap-1" onClick={bringToFront}>
+                                                <FaArrowUp /> UP
+                                            </button>
+                                            <button className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all text-[10px] font-bold flex items-center justify-center gap-1" onClick={sendToBack}>
+                                                <FaArrowDown /> DOWN
+                                            </button>
+                                            <button className="w-12 h-10 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center group" onClick={deleteObject}>
+                                                <FaTrash className="group-hover:scale-110 transition-transform" />
+                                            </button>
+                                        </div>
+
+                                        {(selectedObject.type === 'image' || selectedObject.type === 'fabric.Image') && selectedObject.id !== 'background_image' && (
+                                            <button
+                                                className="w-full mt-2 p-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"
+                                                onClick={setAsBackground}
+                                            >
+                                                <FaImage /> Use as base background
                                             </button>
                                         )}
                                     </div>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <button className="p-2 border rounded hover:bg-gray-50 text-xs" onClick={bringToFront} title="Bring to Front">
-                                            ⬆️ Up
-                                        </button>
-                                        <button className="p-2 border rounded hover:bg-gray-50 text-xs" onClick={sendToBack} title="Send to Back">
-                                            ⬇️ Down
-                                        </button>
-                                        <button className="p-2 border rounded hover:bg-red-50 text-red-600 text-xs font-bold" onClick={deleteObject} title="Delete">
-                                            🗑️ Del
-                                        </button>
-                                    </div>
-                                    {(selectedObject.type === 'image' || selectedObject.type === 'fabric.Image') && selectedObject.id !== 'background_image' && (
-                                        <button
-                                            className="w-full mt-2 p-2 bg-blue-50 text-blue-600 border border-blue-200 rounded text-xs font-bold hover:bg-blue-100"
-                                            onClick={setAsBackground}
-                                        >
-                                            📷 Set as Background
-                                        </button>
-                                    )}
                                 </div>
+                            )}
+                        </div>
+                    </div>
+                </aside>
+
+                {/* Center - Interactive Canvas Viewport */}
+                <main className="flex-1 flex flex-col items-center justify-center bg-slate-100/50 p-6 md:p-12 relative overflow-hidden">
+                    <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#4f46e5 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+
+                    <div className="relative z-10 animate-fadeIn">
+                        <div className="bg-white p-1 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-200/50 flex">
+                            <div className="bg-white rounded-2xl overflow-hidden border border-slate-100">
+                                <canvas ref={canvasRef} />
+                            </div>
+                        </div>
+
+                        {/* Floating Canvas Controls */}
+                        <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/80 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-white/50">
+                            <div className="flex items-center gap-2 pr-4 border-r border-slate-200">
+                                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Fabric v6.x Active</span>
+                            </div>
+                            <div className="flex gap-4">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Resolution: {canvas?.width}x{canvas?.height}</p>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                {/* Right Sidebar - Dynamic Layers Panel */}
+                <aside className="hidden xl:flex w-72 bg-white border-l border-slate-200 flex-col shadow-2xl z-20">
+                    <div className="p-6 flex items-center justify-between border-b border-slate-100 bg-slate-50/50">
+                        <div className="flex items-center gap-2">
+                            <FaLayerGroup className="text-indigo-500 text-sm" />
+                            <h3 className="font-bold text-sm text-slate-700 uppercase tracking-widest">Active Layers</h3>
+                        </div>
+                        <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[9px] font-black">
+                            {canvas?.getObjects().length || 0}
+                        </span>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                        {canvas?.getObjects().length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
+                                <div className="p-6 bg-slate-100 rounded-full text-slate-300">
+                                    <FaShapes className="text-4xl" />
+                                </div>
+                                <p className="text-xs font-bold text-slate-400 uppercase leading-relaxed tracking-wider">Canvas is empty.<br />Start adding shapes.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {canvas?.getObjects().slice().reverse().map((obj, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${selectedObject === obj ? 'bg-indigo-50 border-indigo-200 ring-2 ring-indigo-500/10' : 'bg-white border-slate-100 hover:border-slate-300 hover:shadow-sm'}`}
+                                        onClick={() => {
+                                            canvas.setActiveObject(obj);
+                                            canvas.renderAll();
+                                            setSelectedObject(obj);
+                                        }}
+                                    >
+                                        <div className="h-10 w-10 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-center text-slate-400 shadow-inner">
+                                            {obj.type === 'i-text' || obj.type === 'text' ? <FaFont className="text-sm" /> :
+                                                obj.type === 'image' ? <FaImage className="text-sm" /> : <FaShapes className="text-sm" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[11px] font-bold text-slate-700 truncate capitalize">{obj.role === 'placeholder' ? 'Photo Area' : obj.type}</p>
+                                            <p className="text-[9px] text-slate-400 uppercase tracking-tighter">Layer #{canvas?.getObjects().length - idx}</p>
+                                        </div>
+                                        {obj.locked && <FaLock className="text-[9px] text-amber-500" />}
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>
-                </div>
 
-                {/* Center - Canvas */}
-                <div className="flex-1 flex items-center justify-center bg-gray-100 p-8">
-                    <div className="shadow-2xl border-4 border-white rounded">
-                        <canvas ref={canvasRef} />
+                    <div className="p-6 bg-slate-50 border-t border-slate-100">
+                        <div className="flex items-center gap-2 mb-3">
+                            <FaMagic className="text-emerald-500 text-xs" />
+                            <span className="text-[9px] font-black text-slate-400 uppercase">Shortcuts</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100 text-[8px] font-bold text-slate-400">
+                                <span>DEL</span>
+                                <span className="text-slate-200">DELETE</span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100 text-[8px] font-bold text-slate-400">
+                                <span>ESC</span>
+                                <span className="text-slate-200">CANCEL</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                {/* Right Sidebar - Layers (Future Enhancement) */}
-                <div className="w-64 bg-white border-l p-4">
-                    <h3 className="font-bold text-sm text-gray-700 mb-3">Layers</h3>
-                    <p className="text-xs text-gray-500">Layers panel coming soon...</p>
-                </div>
-            </div >
-        </div >
+                </aside>
+            </div>
+        </div>
     );
 };
 

@@ -98,9 +98,34 @@ const clearCart = async (req, res) => {
     }
 };
 
+// @desc    Update cart item quantity
+// @route   PUT /api/cart/:id
+// @access  Private
+const updateCartItemQuantity = async (req, res) => {
+    const { quantity } = req.body;
+    try {
+        const cart = await Cart.findOne({ user: req.user._id });
+        if (cart) {
+            const item = cart.items.find(item => item._id.toString() === req.params.id);
+            if (item) {
+                item.quantity = quantity;
+                await cart.save();
+                res.json(item);
+            } else {
+                res.status(404).json({ message: 'Item not found in cart' });
+            }
+        } else {
+            res.status(404).json({ message: 'Cart not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     addToCart,
     getCartItems,
     deleteCartItem,
+    updateCartItemQuantity,
     clearCart
 };

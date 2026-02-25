@@ -77,84 +77,75 @@ const CustomizeProduct = () => {
             setIsPanning(false);
         };
 
+        // Keep clipPath (shape) fixed at placeholder position so only image moves, not the shape
+        const syncClipPathToPlaceholder = (obj) => {
+            if (!obj.clipPath || !obj.maskRef) return;
+            const mask = obj.maskRef;
+            obj.clipPath.set({
+                left: mask.left,
+                top: mask.top,
+                scaleX: mask.scaleX ?? 1,
+                scaleY: mask.scaleY ?? 1,
+                angle: mask.angle ?? 0,
+                originX: mask.originX || 'center',
+                originY: mask.originY || 'center'
+            });
+            obj.clipPath.setCoords();
+        };
+
         // Constrain dragged images to stay inside their placeholder area
         const handleObjectMoving = (e) => {
             const obj = e.target;
             if (!obj) return;
 
-            // 1) When the user moves the placeholder shape itself,
-            // keep the clipped image centered inside it.
-            if (obj.role === 'placeholder') {
-                const placeholder = obj;
-                const linkedImage = initCanvas.getObjects().find(
-                    (o) => o.role === 'clipped-image' && o.maskRef === placeholder
-                );
-                if (linkedImage) {
-                    const c = placeholder.getCenterPoint();
-                    linkedImage.set({ left: c.x, top: c.y });
-                    // Keep clipPath in sync so image stays clipped to placeholder shape
-                    if (linkedImage.clipPath) {
-                        linkedImage.clipPath.set({
-                            left: placeholder.left,
-                            top: placeholder.top,
-                            angle: placeholder.angle || 0,
-                            scaleX: placeholder.scaleX,
-                            scaleY: placeholder.scaleY,
-                            originX: placeholder.originX || 'center',
-                            originY: placeholder.originY || 'center'
-                        });
-                    }
-                    initCanvas.renderAll();
+            // Target ONLY the uploaded image inside the shape
+            if (obj.role === 'clipped-image' && obj.maskRef) {
+                const mask = obj.maskRef;
+                const mCenter = mask.getCenterPoint();
+                const mW = mask.getScaledWidth();
+                const mH = mask.getScaledHeight();
+                const iW = obj.getScaledWidth();
+                const iH = obj.getScaledHeight();
+
+                let newX = obj.left;
+                let newY = obj.top;
+
+                // 1. Constrain Panning: The image must always COVER the shape area.
+                if (iW >= mW) {
+                    const limitX = (iW - mW) / 2;
+                    newX = Math.max(mCenter.x - limitX, Math.min(mCenter.x + limitX, newX));
+                } else {
+                    newX = mCenter.x;
                 }
-                return;
+
+                if (iH >= mH) {
+                    const limitY = (iH - mH) / 2;
+                    newY = Math.max(mCenter.y - limitY, Math.min(mCenter.y + limitY, newY));
+                } else {
+                    newY = mCenter.y;
+                }
+
+                obj.set({ left: newX, top: newY });
+
+                // Force clipPath (shape) to stay at placeholder position – only image moves, shape stays fixed
+                syncClipPathToPlaceholder(obj);
+
+                obj.setCoords();
             }
+        };
 
-            // 2) When the user moves the clipped image, keep it within the bounds of its placeholder
-            if (obj.role !== 'clipped-image' || !obj.maskRef) return;
-
-            const placeholder = obj.maskRef;
-            if (!placeholder || typeof placeholder.getScaledWidth !== 'function') return;
-
-            const pCenter = placeholder.getCenterPoint();
-            const pW = placeholder.getScaledWidth();
-            const pH = placeholder.getScaledHeight();
-            const oW = obj.getScaledWidth();
-            const oH = obj.getScaledHeight();
-
-            if (!pW || !pH || !oW || !oH) return;
-
-            // Allowed center range so that image stays fully within placeholder bounds
-            const minX = pCenter.x - (pW - oW) / 2;
-            const maxX = pCenter.x + (pW - oW) / 2;
-            const minY = pCenter.y - (pH - oH) / 2;
-            const maxY = pCenter.y + (pH - oH) / 2;
-
-            const newCenter = obj.getCenterPoint();
-            let x = newCenter.x;
-            let y = newCenter.y;
-
-            if (pW > oW) {
-                x = Math.min(Math.max(x, minX), maxX);
-            } else {
-                x = pCenter.x;
+        const handleObjectModified = (e) => {
+            const obj = e.target;
+            if (obj && obj.role === 'clipped-image' && obj.maskRef) {
+                syncClipPathToPlaceholder(obj);
             }
-
-            if (pH > oH) {
-                y = Math.min(Math.max(y, minY), maxY);
-            } else {
-                y = pCenter.y;
-            }
-
-            obj.set({
-                left: x,
-                top: y
-            });
         };
 
         initCanvas.on('selection:created', handleSelection);
         initCanvas.on('selection:updated', handleSelection);
         initCanvas.on('selection:cleared', handleCleared);
         initCanvas.on('object:moving', handleObjectMoving);
+        initCanvas.on('object:modified', handleObjectModified);
 
         // Keyboard Delete Logic
         const handleKeyDown = (e) => {
@@ -278,14 +269,21 @@ const CustomizeProduct = () => {
                         const id = item.id || originalObj.id;
 
                         // Heuristic: older templates may not have role="placeholder" saved.
-                        // Detect photo areas by their admin styling (red dashed stroke / soft pink fill).
+                        // Detect photo areas by their admin styling: 
+                        // Old: red dashed stroke (#ff6b6b) / soft pink fill
+                        // New: indigo dashed stroke (#6366f1 / #4f46e5)
                         const looksLikeAdminPlaceholder =
                             !role &&
                             originalObj.strokeDashArray &&
                             Array.isArray(originalObj.strokeDashArray) &&
                             originalObj.strokeDashArray.length > 0 &&
-                            (originalObj.stroke === '#ff6b6b' ||
-                                originalObj.fill === 'rgba(255, 228, 225, 0.6)');
+                            (
+                                originalObj.stroke === '#ff6b6b' ||
+                                originalObj.stroke === '#6366f1' ||
+                                originalObj.stroke === '#4f46e5' ||
+                                originalObj.fill === 'rgba(255, 228, 225, 0.6)' ||
+                                originalObj.fill === 'rgba(99, 102, 241, 0.1)'
+                            );
 
                         if (looksLikeAdminPlaceholder) {
                             role = 'placeholder';
@@ -308,11 +306,12 @@ const CustomizeProduct = () => {
                                 lockScalingX: true,
                                 lockScalingY: true,
                                 lockRotation: true,
-                                // Hide admin red dashed styling on user side
-                                strokeWidth: 0,
-                                stroke: 'transparent',
+                                // Gray background for the shape area
+                                strokeWidth: 1,
+                                stroke: '#94a3b8', // Slate-400 border
                                 strokeDashArray: null,
-                                fill: 'rgba(0, 0, 0, 0.05)', // Subtle gray fill indicating area
+                                fill: 'rgba(226, 232, 240, 0.7)', // Slate-200 gray background
+                                // Vincent: Corrected field names
                                 originX: 'center',
                                 originY: 'center',
                                 hoverCursor: 'pointer'
@@ -325,10 +324,10 @@ const CustomizeProduct = () => {
                             const labelId = `label_${item.id}`;
                             const w = item.type === 'path' && item.getBoundingRect ? item.getBoundingRect().width : (item.width * (item.scaleX || 1));
                             const h = item.type === 'path' && item.getBoundingRect ? item.getBoundingRect().height : (item.height * (item.scaleY || 1));
+                            // Simplified blue text label centered in the gray shape
                             const label = new fabric.IText('Select\nPhoto', {
-                                fontSize: Math.max(14, Math.min(w || 80, h || 80) / 5),
-                                fill: '#555555',
-                                backgroundColor: 'transparent', // Clean formatting
+                                fontSize: Math.max(12, Math.min(w || 80, h || 80) / 6),
+                                fill: '#2563eb', // Professional Blue-600
                                 fontWeight: 'bold',
                                 textAlign: 'center',
                                 originX: 'center',
@@ -340,6 +339,7 @@ const CustomizeProduct = () => {
                                 role: 'placeholder-label',
                                 id: labelId,
                                 placeholderRef: item,
+                                lineHeight: 1
                             });
                             initCanvas.add(item, label);
                         } else {
@@ -533,10 +533,10 @@ const CustomizeProduct = () => {
             // ── Step 7: Hide placeholder + label, show image ─────────────────────────
             placeholder.set({
                 visible: false,
-                selectable: true,
-                evented: true,
-                lockMovementX: false,
-                lockMovementY: false
+                selectable: false, // Fully lock the shape
+                evented: false,    // Shape can no longer be clicked
+                lockMovementX: true,
+                lockMovementY: true
             });
 
             const labelId = `label_${placeholder.id}`;

@@ -39,7 +39,7 @@ const AdminDashboard = () => {
 
     return (
         <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+            <h1 className="text-2xl font-bold mb-4">Create Product</h1>
             <div className="mb-4 flex gap-4">
                 <Link to="/admin/create-template" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold">
                     Create New Template

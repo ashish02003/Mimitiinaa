@@ -65,6 +65,20 @@ export const CartProvider = ({ children }) => {
         }
     };
 
+    const updateQuantity = async (id, quantity) => {
+        if (quantity < 1) return;
+        try {
+            await axios.put(`${API_URL}/${id}`, { quantity }, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            setCartItems(cartItems.map(item =>
+                item._id === id ? { ...item, quantity } : item
+            ));
+        } catch (error) {
+            toast.error('Error updating quantity');
+        }
+    };
+
     const clearCart = async () => {
         try {
             await axios.delete(API_URL, {
@@ -77,7 +91,7 @@ export const CartProvider = ({ children }) => {
     };
 
     return (
-        <CartContext.Provider value={{ cartItems, loading, addToCart, removeFromCart, clearCart, fetchCartItems }}>
+        <CartContext.Provider value={{ cartItems, loading, addToCart, removeFromCart, updateQuantity, clearCart, fetchCartItems }}>
             {children}
         </CartContext.Provider>
     );

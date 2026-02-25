@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { addToCart, getCartItems, deleteCartItem, clearCart } = require('../controllers/cartController');
+const { addToCart, getCartItems, deleteCartItem, clearCart, updateCartItemQuantity } = require('../controllers/cartController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.route('/')
@@ -9,6 +9,7 @@ router.route('/')
     .delete(protect, clearCart);
 
 router.route('/:id')
+    .put(protect, updateCartItemQuantity)
     .delete(protect, deleteCartItem);
 
 module.exports = router;

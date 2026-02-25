@@ -1,12 +1,348 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { FaUserCircle, FaBoxOpen, FaHistory } from 'react-icons/fa';
+import {
+    FaUserCircle, FaBoxOpen, FaHistory, FaShieldAlt,
+    FaSignOutAlt, FaEye, FaEyeSlash, FaCheckCircle,
+    FaShoppingBag, FaEdit, FaTimes, FaPencilAlt,
+    FaLock, FaEnvelope, FaUser, FaCamera, FaTrash
+} from 'react-icons/fa';
+import toast from 'react-hot-toast';
 
+// ─── Avatar Section ────────────────────────────────────────────────────────
+const AvatarSection = ({ user, onUpload, onDelete }) => {
+    const fileRef = useRef(null);
+    const [uploading, setUploading] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    const handleFileSelect = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate
+        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        if (!allowed.includes(file.type)) {
+            return toast.error('Please select a JPG, PNG or WebP image');
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            return toast.error('Image must be under 5MB');
+        }
+
+        setUploading(true);
+        const result = await onUpload(file);
+        setUploading(false);
+        if (result?.success) {
+            toast.success('Profile photo updated!');
+        } else {
+            toast.error(result?.message || 'Upload failed');
+        }
+        // Reset file input
+        if (fileRef.current) fileRef.current.value = '';
+    };
+
+    const handleDelete = async () => {
+        setShowDeleteConfirm(false);
+        setDeleting(true);
+        const result = await onDelete();
+        setDeleting(false);
+        if (result?.success) {
+            toast.success('Profile photo removed');
+        } else {
+            toast.error(result?.message || 'Failed to remove photo');
+        }
+    };
+
+    const hasAvatar = !!user?.avatar;
+
+    return (
+        <div className="relative flex-shrink-0 group">
+            {/* Avatar Display */}
+            <div className="w-28 h-28 rounded-3xl overflow-hidden shadow-2xl shadow-blue-200 border-4 border-white">
+                {hasAvatar ? (
+                    <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-black text-5xl">
+                        {user?.name?.charAt(0).toUpperCase()}
+                    </div>
+                )}
+            </div>
+
+            {/* Uploading/Deleting overlay */}
+            {(uploading || deleting) && (
+                <div className="absolute inset-0 bg-black/40 rounded-3xl flex items-center justify-center">
+                    <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            )}
+
+            {/* Camera button - Upload / Change */}
+            <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading || deleting}
+                className="absolute -bottom-2 -right-2 w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all hover:scale-110 active:scale-95 border-3 border-white disabled:opacity-50"
+                title={hasAvatar ? 'Change Photo' : 'Upload Photo'}
+            >
+                <FaCamera size={14} />
+            </button>
+
+            {/* Delete button (only if avatar exists) */}
+            {hasAvatar && !uploading && !deleting && (
+                <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 text-white rounded-lg flex items-center justify-center shadow-lg shadow-red-200 hover:bg-red-600 transition-all hover:scale-110 active:scale-95 border-2 border-white opacity-0 group-hover:opacity-100"
+                    title="Remove Photo"
+                >
+                    <FaTrash size={10} />
+                </button>
+            )}
+
+            {/* Verified badge */}
+            <div className="absolute -bottom-2 -left-2 bg-green-500 text-white p-1.5 rounded-lg border-3 border-white shadow-md">
+                <FaCheckCircle size={12} />
+            </div>
+
+            {/* Hidden file input */}
+            <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleFileSelect}
+                className="hidden"
+            />
+
+            {/* Delete Confirmation Popup */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
+                    <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full animate-fadeIn text-center">
+                        <button onClick={() => setShowDeleteConfirm(false)} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100">
+                            <FaTimes className="text-gray-400 text-sm" />
+                        </button>
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5">
+                            <FaTrash size={22} className="text-red-500" />
+                        </div>
+                        <h3 className="text-xl font-black text-gray-900 mb-2">Remove Photo?</h3>
+                        <p className="text-gray-500 font-medium text-sm mb-8">
+                            Are you sure you want to remove your profile photo? Your avatar will be replaced with default initials.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="flex-1 py-3 rounded-2xl border-2 border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-colors text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="flex-1 py-3 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-200 text-sm"
+                            >
+                                Yes, Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ─── Edit Profile Modal ─────────────────────────────────────────────────────
+const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
+    const [name, setName] = useState(user?.name || '');
+    const [email, setEmail] = useState(user?.email || '');
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setName(user?.name || '');
+            setEmail(user?.email || '');
+        }
+    }, [isOpen, user]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!name.trim() || !email.trim()) return toast.error('Name and email are required');
+        setSaving(true);
+        const result = await onSave(name.trim(), email.trim());
+        setSaving(false);
+        if (result?.success) {
+            toast.success('Profile updated!');
+            onClose();
+        } else {
+            toast.error(result?.message || 'Failed to update profile');
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-fadeIn">
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <FaTimes className="text-gray-400" />
+                </button>
+
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
+                        <FaPencilAlt className="text-blue-600 text-lg" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-black text-gray-900">Edit Profile</h2>
+                        <p className="text-sm text-gray-400 font-medium">Update your account details</p>
+                    </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Full Name</label>
+                        <div className="relative">
+                            <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 text-sm" />
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Your full name"
+                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl font-bold text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Email Address</label>
+                        <div className="relative">
+                            <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 text-sm" />
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="your@email.com"
+                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl font-bold text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 py-3.5 rounded-2xl border-2 border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-colors text-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="flex-1 py-3.5 rounded-2xl bg-blue-600 text-white font-black hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// ─── Logout Confirmation Modal ─────────────────────────────────────────────
+const LogoutModal = ({ isOpen, onConfirm, onCancel }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+            <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full animate-fadeIn text-center">
+                <button onClick={onCancel} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100">
+                    <FaTimes className="text-gray-400 text-sm" />
+                </button>
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <FaSignOutAlt size={24} className="text-red-500" />
+                </div>
+                <h3 className="text-2xl font-black text-gray-900 mb-2">Logout?</h3>
+                <p className="text-gray-500 font-medium mb-8">
+                    Are you sure you want to end your session? You'll need to log in again to access your account.
+                </p>
+                <div className="flex gap-3">
+                    <button
+                        onClick={onCancel}
+                        className="flex-1 py-3.5 rounded-2xl border-2 border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                        Stay In
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className="flex-1 py-3.5 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
+                    >
+                        Yes, Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ─── Password Field ────────────────────────────────────────────────────────
+const PasswordField = ({ label, value, onChange, show, onToggle, placeholder }) => (
+    <div>
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-2">{label}</label>
+        <div className="relative">
+            <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 text-sm" />
+            <input
+                type={show ? 'text' : 'password'}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                className="w-full pl-11 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl font-semibold text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+            <button
+                type="button"
+                onClick={onToggle}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors"
+            >
+                {show ? <FaEyeSlash size={15} /> : <FaEye size={15} />}
+            </button>
+        </div>
+    </div>
+);
+
+// ─── Status Badge ──────────────────────────────────────────────────────────
+const StatusBadge = ({ status }) => {
+    const styles = {
+        Pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+        Processing: 'bg-blue-50 text-blue-700 border-blue-200',
+        Shipped: 'bg-purple-50 text-purple-700 border-purple-200',
+        Delivered: 'bg-green-50 text-green-700 border-green-200',
+    };
+    return (
+        <span className={`inline-flex items-center px-3 py-1 rounded-full border text-xs font-black uppercase tracking-wider ${styles[status] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+            {status}
+        </span>
+    );
+};
+
+// ─── Main Profile Component ────────────────────────────────────────────────
 const Profile = () => {
-    const { user } = useAuth();
+    const { user, logout, updateProfile, updateAvatar, deleteAvatar } = useAuth();
     const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [ordersLoading, setOrdersLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('profile');
+
+    // Edit profile modal
+    const [showEditModal, setShowEditModal] = useState(false);
+
+    // Logout modal
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    // Password change state
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
+    const [changingPwd, setChangingPwd] = useState(false);
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -15,102 +351,329 @@ const Profile = () => {
                     headers: { Authorization: `Bearer ${user.token}` }
                 });
                 setOrders(data);
-            } catch (error) {
-                console.error('Error fetching orders:', error);
+            } catch (err) {
+                console.error('Error fetching orders:', err);
             } finally {
-                setLoading(false);
+                setOrdersLoading(false);
             }
         };
-
         if (user) fetchOrders();
     }, [user]);
 
-    return (
-        <div className="container mx-auto p-4 lg:p-12 max-w-5xl">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* User Info Column */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 sticky top-24">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-4 ring-4 ring-blue-100">
-                                <FaUserCircle size={60} className="text-blue-600" />
-                            </div>
-                            <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">{user.name}</h2>
-                            <p className="text-gray-500 font-medium mb-6">{user.email}</p>
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        if (!currentPassword || !newPassword || !confirmPassword)
+            return toast.error('Please fill all password fields');
+        if (newPassword !== confirmPassword)
+            return toast.error('New passwords do not match');
+        if (newPassword.length < 6)
+            return toast.error('Password must be at least 6 characters');
+        setChangingPwd(true);
+        try {
+            await axios.put(
+                'http://localhost:5000/api/auth/change-password',
+                { currentPassword, newPassword },
+                { headers: { Authorization: `Bearer ${user.token}` } }
+            );
+            toast.success('Password updated successfully!');
+            setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update password');
+        } finally {
+            setChangingPwd(false);
+        }
+    };
 
-                            <div className="w-full space-y-3 pt-6 border-t border-gray-100">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Role</span>
-                                    <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-black uppercase">{user.role}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Status</span>
-                                    <span className="text-green-600 font-black">ACTIVE</span>
-                                </div>
-                            </div>
-                        </div>
+    const togglePwd = (field) =>
+        setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
+
+    const tabs = [
+        { id: 'profile', label: 'Account Info', icon: <FaUserCircle /> },
+        { id: 'orders', label: 'Order History', icon: <FaShoppingBag /> },
+        { id: 'security', label: 'Security', icon: <FaShieldAlt /> },
+    ];
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 py-12">
+            {/* Modals */}
+            <EditProfileModal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                user={user}
+                onSave={updateProfile}
+            />
+            <LogoutModal
+                isOpen={showLogoutModal}
+                onConfirm={() => { setShowLogoutModal(false); logout(); }}
+                onCancel={() => setShowLogoutModal(false)}
+            />
+
+            <div className="container mx-auto px-4 max-w-6xl">
+                {/* ── Page Header ── */}
+                <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <p className="text-xs font-black text-blue-600 uppercase tracking-widest mb-1">Welcome back</p>
+                        <h1 className="text-4xl font-black text-gray-900 tracking-tight leading-none">
+                            {user?.name?.split(' ')[0]}'s Dashboard
+                        </h1>
+                        <p className="text-gray-400 font-medium mt-2">Manage your profile, track orders and keep your account secure.</p>
                     </div>
+                    <button
+                        onClick={() => setShowLogoutModal(true)}
+                        className="self-start sm:self-auto flex items-center gap-2 px-5 py-3 rounded-2xl bg-white text-red-500 font-bold border border-red-100 hover:bg-red-50 hover:border-red-200 transition-all shadow-sm group"
+                    >
+                        <FaSignOutAlt className="group-hover:translate-x-0.5 transition-transform" />
+                        Logout Session
+                    </button>
                 </div>
 
-                {/* Orders History Column */}
-                <div className="lg:col-span-2 space-y-6">
-                    <h3 className="text-2xl font-black text-gray-800 flex items-center gap-3">
-                        <FaHistory className="text-blue-600" />
-                        My Order History
-                    </h3>
-
-                    {loading ? (
-                        <div className="p-20 text-center text-gray-400 font-bold uppercase tracking-widest">Loading history...</div>
-                    ) : orders.length === 0 ? (
-                        <div className="bg-white p-16 rounded-3xl text-center shadow-sm border border-dashed border-gray-200">
-                            <FaBoxOpen size={50} className="mx-auto text-gray-300 mb-6" />
-                            <p className="text-gray-500 font-bold text-lg">You haven't placed any orders yet.</p>
-                            <p className="text-gray-400 text-sm mt-1">Your custom creations will appear here!</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(order => (
-                                <div key={order._id} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden group hover:border-blue-200 transition-colors">
-                                    <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                                        <div className="flex items-center gap-4">
-                                            <span className="text-[10px] font-black text-gray-400 tracking-tighter uppercase leading-none block">Order<br />ID</span>
-                                            <span className="font-mono text-xs font-bold text-gray-600">#{order._id.substring(order._id.length - 8).toUpperCase()}</span>
-                                        </div>
-                                        <div className="flex items-center gap-6">
-                                            <div className="text-right">
-                                                <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase block mb-0.5">Date</span>
-                                                <span className="text-xs font-bold text-gray-700">{new Date(order.createdAt).toLocaleDateString()}</span>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest block mb-0.5 ${order.status === 'Delivered' ? 'text-green-500' : 'text-orange-500'}`}>Status</span>
-                                                <span className="text-xs font-bold">{order.status}</span>
-                                            </div>
-                                        </div>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    {/* ── Sidebar ── */}
+                    <div className="lg:col-span-1 space-y-2">
+                        {/* Profile Card in Sidebar */}
+                        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-4 flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl overflow-hidden flex-shrink-0 shadow-lg shadow-blue-200">
+                                {user?.avatar ? (
+                                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-black text-xl">
+                                        {user?.name?.charAt(0).toUpperCase()}
                                     </div>
-                                    <div className="p-6">
-                                        {order.orderItems.map((item, idx) => (
-                                            <div key={idx} className="flex gap-6 items-center mb-6 last:mb-0">
-                                                <img src={item.finalImageUrl} alt="Order Item" className="w-16 h-16 object-contain rounded-xl bg-gray-50 p-1" />
-                                                <div className="flex-1">
-                                                    <span className="text-xs font-bold text-blue-600 block mb-1">QTY: {item.qty}</span>
-                                                    <p className="text-xl font-black text-gray-800 leading-none">₹{item.price}</p>
+                                )}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="font-black text-gray-900 truncate text-sm">{user?.name}</p>
+                                <p className="text-xs text-gray-400 font-medium truncate">{user?.email}</p>
+                            </div>
+                        </div>
+
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold transition-all text-left text-sm ${activeTab === tab.id
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200/60 scale-[1.02]'
+                                        : 'bg-white text-gray-500 hover:bg-blue-50 hover:text-blue-600 border border-gray-100'
+                                    }`}
+                            >
+                                <span className="text-lg">{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* ── Content ── */}
+                    <div className="lg:col-span-3">
+                        <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+
+                            {/* ── Account Info Tab ── */}
+                            {activeTab === 'profile' && (
+                                <div className="p-8 lg:p-10 animate-fadeIn">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div>
+                                            <h2 className="text-2xl font-black text-gray-900">Account Information</h2>
+                                            <p className="text-gray-400 font-medium text-sm mt-1">Your personal details and preferences</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowEditModal(true)}
+                                            className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-colors shadow-md"
+                                        >
+                                            <FaEdit size={13} /> Edit Profile
+                                        </button>
+                                    </div>
+
+                                    <div className="flex flex-col md:flex-row gap-10 items-start">
+                                        {/* Avatar with upload/delete */}
+                                        <AvatarSection
+                                            user={user}
+                                            onUpload={updateAvatar}
+                                            onDelete={deleteAvatar}
+                                        />
+
+                                        {/* Info Grid */}
+                                        <div className="flex-1 space-y-6">
+                                            {/* Photo tip */}
+                                            <div className="bg-blue-50/60 rounded-2xl px-5 py-3 border border-blue-100 flex items-center gap-3">
+                                                <FaCamera className="text-blue-500 flex-shrink-0" />
+                                                <p className="text-xs text-blue-700 font-medium">
+                                                    <strong>Tip:</strong> Hover over your photo to see upload & delete options. Supported formats: JPG, PNG, WebP (max 5MB).
+                                                </p>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="bg-gray-50 rounded-2xl p-5">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">Full Name</label>
+                                                    <p className="text-xl font-black text-gray-900">{user?.name}</p>
+                                                </div>
+                                                <div className="bg-gray-50 rounded-2xl p-5">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">Email Address</label>
+                                                    <p className="text-base font-bold text-gray-700 break-all">{user?.email}</p>
+                                                </div>
+                                                <div className="bg-gray-50 rounded-2xl p-5">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">Account Type</label>
+                                                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-black uppercase tracking-wider">
+                                                        {user?.role}
+                                                    </span>
+                                                </div>
+                                                <div className="bg-gray-50 rounded-2xl p-5">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1">Account Status</label>
+                                                    <span className="inline-flex items-center gap-2 text-green-600 font-black text-sm">
+                                                        <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
+                                                        Active & Verified
+                                                    </span>
                                                 </div>
                                             </div>
-                                        ))}
-                                        <div className="mt-6 pt-6 border-t border-gray-100 flex justify-between items-end">
-                                            <div>
-                                                <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase block mb-1">Total Paid</span>
-                                                <span className="text-2xl font-black text-blue-600">₹{order.totalPrice}</span>
-                                            </div>
-                                            <button className="text-xs font-black text-blue-600 hover:text-blue-800 uppercase tracking-widest bg-blue-50 px-5 py-2 rounded-full transition-colors">
-                                                Track Order
-                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                            )}
+
+                            {/* ── Order History Tab ── */}
+                            {activeTab === 'orders' && (
+                                <div className="p-8 lg:p-10 animate-fadeIn min-h-[500px]">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div>
+                                            <h2 className="text-2xl font-black text-gray-900">Order History</h2>
+                                            <p className="text-gray-400 font-medium text-sm mt-1">Track and review your past purchases</p>
+                                        </div>
+                                        <span className="text-sm font-black text-gray-400 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
+                                            {orders.length} Total
+                                        </span>
+                                    </div>
+
+                                    {ordersLoading ? (
+                                        <div className="py-24 flex flex-col items-center justify-center text-gray-300">
+                                            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                            <p className="font-bold uppercase tracking-widest text-xs">Loading orders...</p>
+                                        </div>
+                                    ) : orders.length === 0 ? (
+                                        <div className="py-20 text-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+                                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                                <FaBoxOpen size={32} className="text-gray-200" />
+                                            </div>
+                                            <h4 className="text-xl font-black text-gray-800 mb-2">No orders yet</h4>
+                                            <p className="text-gray-400 font-medium mb-6">You haven't placed any orders yet.</p>
+                                            <Link to="/" className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all inline-block">
+                                                Start Shopping
+                                            </Link>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {[...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(order => (
+                                                <div key={order._id} className="border border-gray-100 rounded-3xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-50 transition-all overflow-hidden">
+                                                    {/* Order Header */}
+                                                    <div className="flex flex-wrap gap-4 justify-between items-center px-6 py-4 bg-gray-50/80 border-b border-gray-100">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow">
+                                                                <FaHistory size={14} className="text-white" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Order ID</p>
+                                                                <p className="text-sm font-black text-gray-800 font-mono">#{order._id.slice(-8).toUpperCase()}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</p>
+                                                            <p className="text-sm font-bold text-gray-700">
+                                                                {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                            </p>
+                                                        </div>
+                                                        <StatusBadge status={order.status} />
+                                                        <p className="text-xl font-black text-blue-600">₹{order.totalPrice?.toLocaleString()}</p>
+                                                    </div>
+
+                                                    {/* Order Items */}
+                                                    <div className="p-6">
+                                                        <div className="space-y-3">
+                                                            {order.orderItems?.map((item, i) => (
+                                                                <div key={i} className="flex items-center gap-4">
+                                                                    <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                                        {item.finalImageUrl ? (
+                                                                            <img src={item.finalImageUrl} alt="item" className="w-full h-full object-contain" />
+                                                                        ) : (
+                                                                            <FaShoppingBag className="text-gray-300 text-xl" />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="font-black text-gray-800 text-sm truncate">Custom Product</p>
+                                                                        <p className="text-xs text-gray-400 font-medium">Qty: {item.qty || 1}</p>
+                                                                    </div>
+                                                                    <p className="font-black text-gray-700 text-sm">₹{item.price?.toLocaleString()}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ── Security Tab ── */}
+                            {activeTab === 'security' && (
+                                <div className="p-8 lg:p-10 animate-fadeIn">
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-black text-gray-900">Security Settings</h2>
+                                        <p className="text-gray-400 font-medium text-sm mt-1">Keep your account safe with a strong password</p>
+                                    </div>
+
+                                    <div className="max-w-md">
+                                        <div className="flex items-center gap-4 p-5 bg-blue-50 rounded-2xl border border-blue-100 mb-8">
+                                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow shadow-blue-200">
+                                                <FaShieldAlt className="text-white text-sm" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-blue-900">Password Protection</p>
+                                                <p className="text-xs text-blue-600 font-medium">Use a strong, unique password for maximum security.</p>
+                                            </div>
+                                        </div>
+
+                                        <form onSubmit={handlePasswordChange} className="space-y-5">
+                                            <PasswordField
+                                                label="Current Password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                show={showPasswords.current}
+                                                onToggle={() => togglePwd('current')}
+                                                placeholder="Enter current password"
+                                            />
+                                            <PasswordField
+                                                label="New Password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                show={showPasswords.new}
+                                                onToggle={() => togglePwd('new')}
+                                                placeholder="Enter new password"
+                                            />
+                                            <PasswordField
+                                                label="Confirm New Password"
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                show={showPasswords.confirm}
+                                                onToggle={() => togglePwd('confirm')}
+                                                placeholder="Confirm new password"
+                                            />
+
+                                            <button
+                                                type="submit"
+                                                disabled={changingPwd}
+                                                className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-sm hover:bg-gray-800 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] mt-2"
+                                            >
+                                                {changingPwd ? (
+                                                    <span className="flex items-center justify-center gap-2">
+                                                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                                        Updating...
+                                                    </span>
+                                                ) : 'Update Password'}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
         </div>
