@@ -6,6 +6,7 @@ const cloudinary = require('cloudinary').v2;
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const path = require('path');
 
 // Middleware
 app.use(cors());
@@ -37,6 +38,16 @@ app.use('/api/shipping', require('./routes/shippingRoutes'));   // ✅ NimbusPos
 
 app.get('/', (req, res) => {
     res.send('API is running...');
+});
+
+// Serve frontend static files if present
+app.use(express.static(path.join(__dirname, 'public')));
+
+// SPA fallback - serve index.html for any non-API route (client-side routing)
+// Fallback middleware: serve `index.html` for non-API routes (SPA)
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
