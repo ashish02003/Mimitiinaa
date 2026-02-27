@@ -1,6 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    body {
+        font-family: 'Inter', sans-serif;
+        @apply text-gray-900 bg-white;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    .font-heading {
+        font-family: 'Oswald', sans-serif;
+    }
+}
+
+@layer utilities {
+    .text-strike {
+        text-decoration: line-through;
+    }
+
+    .browse-section {
+        @apply transition-all duration-300 rounded-[2rem] p-6 md:p-10 mb-12;
+    }
+}
+
+
+@layer utilities {
+    .hover-grow {
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .hover-grow:hover {
+        transform: scale(1.05);
+    }
+}
+
+
 
 @layer utilities {
     .animate-fadeIn {

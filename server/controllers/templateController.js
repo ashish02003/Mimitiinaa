@@ -22,7 +22,9 @@ const createTemplate = async (req, res) => {
             variantNo,
             productSize,
             printSize,
-            moq
+            moq,
+            packingCharges,
+            shippingCharges
         } = req.body;
 
         const template = await Template.create({
@@ -43,6 +45,8 @@ const createTemplate = async (req, res) => {
             productSize,
             printSize,
             moq,
+            packingCharges: packingCharges || 0,
+            shippingCharges: shippingCharges || 0,
             createdBy: req.user?._id
         });
 
@@ -115,7 +119,9 @@ const updateTemplate = async (req, res) => {
             variantNo,
             productSize,
             printSize,
-            moq
+            moq,
+            packingCharges,
+            shippingCharges
         } = req.body;
 
         const template = await Template.findById(req.params.id);
@@ -138,6 +144,8 @@ const updateTemplate = async (req, res) => {
             template.productSize = productSize || template.productSize;
             template.printSize = printSize || template.printSize;
             template.moq = moq || template.moq;
+            template.packingCharges = packingCharges !== undefined ? packingCharges : template.packingCharges;
+            template.shippingCharges = shippingCharges !== undefined ? shippingCharges : template.shippingCharges;
 
             const updatedTemplate = await template.save();
             res.json(updatedTemplate);

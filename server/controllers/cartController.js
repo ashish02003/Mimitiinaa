@@ -24,20 +24,33 @@ const addToCart = async (req, res) => {
             });
         }
 
+        const Template = require('../models/Template');
+        const templateDoc = await Template.findById(template).select('packingCharges shippingCharges');
+
         // Add new item to items array
-        // We use the mappings to ensure compatibility with frontend and backend schema
         cart.items.push({
             template: template,
             canvasJSON: customizedJson,
             finalDesignUrl: finalImageUrl,
             price: price,
-            quantity: qty || 1
+            quantity: qty || 1,
+            packingCharges: templateDoc?.packingCharges || 0,
+            shippingCharges: templateDoc?.shippingCharges || 0
         });
 
         await cart.save();
 
-        // Return the last added item to match frontend expectation
-        const addedItem = cart.items[cart.items.length - 1];
+        // Populate for newly added item to get template charges
+        await cart.populate({
+            path: 'items.template',
+            select: 'name packingCharges shippingCharges'
+        });
+
+        // Return the last added item enriched with charges
+        const addedItem = cart.items[cart.items.length - 1].toObject();
+        addedItem.packingCharges = addedItem.template?.packingCharges ?? 0;
+        addedItem.shippingCharges = addedItem.template?.shippingCharges ?? 0;
+
         res.status(201).json(addedItem);
     } catch (error) {
         console.error('Add to cart error:', error);
@@ -50,13 +63,22 @@ const addToCart = async (req, res) => {
 // @access  Private
 const getCartItems = async (req, res) => {
     try {
-        const cart = await Cart.findOne({ user: req.user._id }).populate('items.template', 'name');
+        const cart = await Cart.findOne({ user: req.user._id })
+            .populate('items.template', 'name packingCharges shippingCharges');
 
         if (!cart) {
             return res.json([]);
         }
 
-        res.json(cart.items);
+        // Merge template pricing charges into each cart item for frontend use
+        const enrichedItems = cart.items.map(item => {
+            const obj = item.toObject();
+            obj.packingCharges = item.packingCharges ?? item.template?.packingCharges ?? 0;
+            obj.shippingCharges = item.shippingCharges ?? item.template?.shippingCharges ?? 0;
+            return obj;
+        });
+
+        res.json(enrichedItems);
     } catch (error) {
         console.error('Get cart error:', error);
         res.status(500).json({ message: error.message });

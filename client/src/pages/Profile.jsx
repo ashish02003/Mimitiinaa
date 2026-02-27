@@ -6,7 +6,8 @@ import {
     FaUserCircle, FaBoxOpen, FaHistory, FaShieldAlt,
     FaSignOutAlt, FaEye, FaEyeSlash, FaCheckCircle,
     FaShoppingBag, FaEdit, FaTimes, FaPencilAlt,
-    FaLock, FaEnvelope, FaUser, FaCamera, FaTrash
+    FaLock, FaEnvelope, FaUser, FaCamera, FaTrash,
+    FaTruck, FaMapMarkerAlt, FaPhone, FaBox
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
@@ -16,6 +17,7 @@ const AvatarSection = ({ user, onUpload, onDelete }) => {
     const [uploading, setUploading] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     const handleFileSelect = async (e) => {
         const file = e.target.files?.[0];
@@ -31,8 +33,12 @@ const AvatarSection = ({ user, onUpload, onDelete }) => {
         }
 
         setUploading(true);
-        const result = await onUpload(file);
+        setUploadProgress(0);
+        const result = await onUpload(file, (percent) => {
+            setUploadProgress(percent);
+        });
         setUploading(false);
+        setUploadProgress(0);
         if (result?.success) {
             toast.success('Profile photo updated!');
         } else {
@@ -75,8 +81,13 @@ const AvatarSection = ({ user, onUpload, onDelete }) => {
 
             {/* Uploading/Deleting overlay */}
             {(uploading || deleting) && (
-                <div className="absolute inset-0 bg-black/40 rounded-3xl flex items-center justify-center">
-                    <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute inset-0 bg-black/40 rounded-3xl flex flex-col items-center justify-center">
+                    <div className="w-10 h-10 rounded-full border-4 border-white border-t-transparent animate-spin mb-2"></div>
+                    {uploading && (
+                        <span className="text-xs font-bold text-white">
+                            {uploadProgress}%
+                        </span>
+                    )}
                 </div>
             )}
 
@@ -312,13 +323,24 @@ const PasswordField = ({ label, value, onChange, show, onToggle, placeholder }) 
 // ─── Status Badge ──────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
     const styles = {
-        Pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-        Processing: 'bg-blue-50 text-blue-700 border-blue-200',
-        Shipped: 'bg-purple-50 text-purple-700 border-purple-200',
-        Delivered: 'bg-green-50 text-green-700 border-green-200',
+        'Order Confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
+        'Packed': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+        'Shipped': 'bg-purple-50 text-purple-700 border-purple-200',
+        'Out for Delivery': 'bg-orange-50 text-orange-700 border-orange-200',
+        'Delivered': 'bg-green-50 text-green-700 border-green-200',
+        'Cancelled': 'bg-red-50 text-red-700 border-red-200',
+        // Legacy
+        'Pending': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+        'Processing': 'bg-blue-50 text-blue-700 border-blue-200',
+    };
+    const icons = {
+        'Order Confirmed': '✅', 'Packed': '📦', 'Shipped': '🚚',
+        'Out for Delivery': '🛵', 'Delivered': '🎉', 'Cancelled': '❌',
+        'Pending': '⏳', 'Processing': '⚙️',
     };
     return (
-        <span className={`inline-flex items-center px-3 py-1 rounded-full border text-xs font-black uppercase tracking-wider ${styles[status] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-black uppercase tracking-wider ${styles[status] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+            <span>{icons[status] || '📋'}</span>
             {status}
         </span>
     );
@@ -452,8 +474,8 @@ const Profile = () => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold transition-all text-left text-sm ${activeTab === tab.id
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200/60 scale-[1.02]'
-                                        : 'bg-white text-gray-500 hover:bg-blue-50 hover:text-blue-600 border border-gray-100'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200/60 scale-[1.02]'
+                                    : 'bg-white text-gray-500 hover:bg-blue-50 hover:text-blue-600 border border-gray-100'
                                     }`}
                             >
                                 <span className="text-lg">{tab.icon}</span>
@@ -558,53 +580,109 @@ const Profile = () => {
                                             </Link>
                                         </div>
                                     ) : (
-                                        <div className="space-y-4">
-                                            {[...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(order => (
-                                                <div key={order._id} className="border border-gray-100 rounded-3xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-50 transition-all overflow-hidden">
-                                                    {/* Order Header */}
-                                                    <div className="flex flex-wrap gap-4 justify-between items-center px-6 py-4 bg-gray-50/80 border-b border-gray-100">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow">
-                                                                <FaHistory size={14} className="text-white" />
+                                        <div className="space-y-6">
+                                            {[...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(order => {
+                                                const addr = order.shippingAddress;
+                                                const orderShort = order._id.slice(-8).toUpperCase();
+                                                return (
+                                                    <div key={order._id} className="border border-gray-100 rounded-3xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-50 transition-all overflow-hidden">
+                                                        {/* Order Header */}
+                                                        <div className="flex flex-wrap gap-4 justify-between items-center px-6 py-4 bg-gray-50/80 border-b border-gray-100">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow">
+                                                                    <FaHistory size={14} className="text-white" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Order ID</p>
+                                                                    <p className="text-sm font-black text-gray-800 font-mono">#{orderShort}</p>
+                                                                    <p className="text-[10px] text-gray-400">{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Order ID</p>
-                                                                <p className="text-sm font-black text-gray-800 font-mono">#{order._id.slice(-8).toUpperCase()}</p>
-                                                            </div>
+                                                            <StatusBadge status={order.orderStatus || order.status} />
+                                                            <p className="text-xl font-black text-indigo-600">₹{order.totalPrice?.toLocaleString()}</p>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</p>
-                                                            <p className="text-sm font-bold text-gray-700">
-                                                                {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                            </p>
-                                                        </div>
-                                                        <StatusBadge status={order.status} />
-                                                        <p className="text-xl font-black text-blue-600">₹{order.totalPrice?.toLocaleString()}</p>
-                                                    </div>
 
-                                                    {/* Order Items */}
-                                                    <div className="p-6">
-                                                        <div className="space-y-3">
-                                                            {order.orderItems?.map((item, i) => (
-                                                                <div key={i} className="flex items-center gap-4">
-                                                                    <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                                                        {item.finalImageUrl ? (
-                                                                            <img src={item.finalImageUrl} alt="item" className="w-full h-full object-contain" />
-                                                                        ) : (
-                                                                            <FaShoppingBag className="text-gray-300 text-xl" />
+                                                        {/* Order Items */}
+                                                        <div className="p-6">
+                                                            <div className="space-y-3 mb-5">
+                                                                {order.orderItems?.map((item, i) => (
+                                                                    <div key={i} className="flex items-center gap-4">
+                                                                        <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                                            {(item.finalImageUrl || item.finalDesignUrl) ? (
+                                                                                <img src={item.finalImageUrl || item.finalDesignUrl} alt="item" className="w-full h-full object-contain" />
+                                                                            ) : (
+                                                                                <FaShoppingBag className="text-gray-300 text-xl" />
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className="font-black text-gray-800 text-sm truncate">{item.template?.name || 'Custom Product'}</p>
+                                                                            <p className="text-xs text-gray-400">Qty: {item.quantity || item.qty || 1} × ₹{item.price}</p>
+                                                                        </div>
+                                                                        <p className="font-black text-gray-700 text-sm">₹{(item.price * (item.quantity || item.qty || 1)).toLocaleString()}</p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+                                                            {/* Price Breakdown */}
+                                                            {(order.subtotal != null) && (
+                                                                <div className="bg-gray-50 rounded-2xl p-4 mb-4 space-y-1.5 text-xs">
+                                                                    <div className="flex justify-between"><span className="text-gray-500 font-medium flex items-center gap-1"><FaShoppingBag className="text-gray-400" /> Product Cost</span><span className="font-bold text-gray-800">₹{order.subtotal?.toLocaleString()}</span></div>
+                                                                    <div className="flex justify-between"><span className="text-gray-500 font-medium flex items-center gap-1"><FaBox className="text-gray-400" /> Packing Charges</span><span className={`font-bold ${order.packingChargesTotal > 0 ? 'text-gray-800' : 'text-gray-300'}`}>₹{order.packingChargesTotal || 0}</span></div>
+                                                                    <div className="flex justify-between"><span className="text-gray-500 font-medium flex items-center gap-1"><FaTruck className="text-gray-400" /> Shipping Fee</span><span className={`font-bold ${order.shippingChargesTotal === 0 ? 'text-green-600' : 'text-gray-800'}`}>{order.shippingChargesTotal === 0 ? 'FREE' : `₹${order.shippingChargesTotal}`}</span></div>
+                                                                    <div className="flex justify-between border-t border-gray-200 pt-1.5"><span className="font-black text-gray-900">Total Paid</span><span className="font-black text-indigo-700">₹{order.totalPrice?.toLocaleString()}</span></div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Delivery Address */}
+                                                            {addr && (
+                                                                <div className="bg-blue-50/50 rounded-2xl p-4 mb-4">
+                                                                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Delivery Address</p>
+                                                                    <div className="space-y-1 text-xs">
+                                                                        <div className="flex items-center gap-2"><FaUser className="text-blue-400" /><span className="font-bold text-gray-700">{addr.fullName}</span></div>
+                                                                        <div className="flex items-center gap-2"><FaPhone className="text-blue-400" /><span className="text-gray-600">+91 {addr.phone}</span></div>
+                                                                        <div className="flex items-start gap-2"><FaMapMarkerAlt className="text-blue-400 mt-0.5" /><span className="text-gray-600">{addr.addressLine1}{addr.addressLine2 && `, ${addr.addressLine2}`}, {addr.city}, {addr.state} — {addr.pincode}</span></div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Tracking Info */}
+                                                            {order.shippingInfo?.awbCode && (
+                                                                <div className="bg-indigo-50 rounded-2xl p-4">
+                                                                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2">📦 Tracking Info</p>
+                                                                    <div className="space-y-1 text-xs mb-3">
+                                                                        <div className="flex justify-between">
+                                                                            <span className="text-gray-500">AWB / Tracking ID</span>
+                                                                            <span className="font-black text-indigo-700">{order.shippingInfo.awbCode}</span>
+                                                                        </div>
+                                                                        {order.shippingInfo.courier && (
+                                                                            <div className="flex justify-between">
+                                                                                <span className="text-gray-500">Courier</span>
+                                                                                <span className="font-bold">{order.shippingInfo.courier}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {order.shippingInfo.lastStatus && (
+                                                                            <div className="flex justify-between">
+                                                                                <span className="text-gray-500">Last Update</span>
+                                                                                <span className="font-bold text-green-600">{order.shippingInfo.lastStatus}</span>
+                                                                            </div>
                                                                         )}
                                                                     </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className="font-black text-gray-800 text-sm truncate">Custom Product</p>
-                                                                        <p className="text-xs text-gray-400 font-medium">Qty: {item.qty || 1}</p>
-                                                                    </div>
-                                                                    <p className="font-black text-gray-700 text-sm">₹{item.price?.toLocaleString()}</p>
+                                                                    {order.shippingInfo.trackingUrl && (
+                                                                        <a
+                                                                            href={order.shippingInfo.trackingUrl}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="flex items-center gap-2 justify-center w-full py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 transition-all"
+                                                                        >
+                                                                            <FaTruck /> Track My Order →
+                                                                        </a>
+                                                                    )}
                                                                 </div>
-                                                            ))}
+                                                            )}
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>

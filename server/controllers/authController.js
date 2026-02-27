@@ -58,6 +58,8 @@ const loginUser = async (req, res) => {
         const user = await User.findOne({ email });
 
         if (user && (await user.matchPassword(password))) {
+            user.lastActive = Date.now();
+            await user.save();
             res.json(userResponse(user));
         } else {
             res.status(401).json({ message: 'Invalid email or password' });

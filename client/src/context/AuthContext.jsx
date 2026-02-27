@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const updateAvatar = async (file) => {
+    const updateAvatar = async (file, onProgress) => {
         try {
             const formData = new FormData();
             formData.append('avatar', file);
@@ -81,6 +81,12 @@ export const AuthProvider = ({ children }) => {
                     headers: {
                         Authorization: `Bearer ${user.token}`,
                         'Content-Type': 'multipart/form-data'
+                    },
+                    onUploadProgress: (event) => {
+                        if (onProgress && event.total) {
+                            const percent = Math.round((event.loaded * 100) / event.total);
+                            onProgress(percent);
+                        }
                     }
                 }
             );

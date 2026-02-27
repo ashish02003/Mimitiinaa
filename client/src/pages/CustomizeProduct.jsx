@@ -7,7 +7,12 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
 import MugWrapPreview from '../components/MugWrapPreview';
+import { Layout, Card, Button, Typography, Space, Tag } from 'antd';
+import { FaTimes } from 'react-icons/fa';
 // customizationAPI no longer needed – frontend clipPath approach is used
+
+const { Content } = Layout;
+const { Title, Text } = Typography;
 
 const CustomizeProduct = () => {
     const { id } = useParams();
@@ -608,7 +613,15 @@ const CustomizeProduct = () => {
         ui.forEach(o => o.set('visible', false));
         canvas.discardActiveObject();
         canvas.renderAll();
-        setPreviewImage(canvas.toDataURL({ multiplier: 2 }));
+
+        const designUrl = canvas.toDataURL({ multiplier: 2 });
+        setPreviewImage(designUrl);
+
+        // For Mug/Bottle templates, use the current full canvas design for the 3D preview
+        if (template?.wrapType === 'mug' || template?.wrapType === 'bottle' || showMugPreview) {
+            setMugPreviewUrl(designUrl);
+        }
+
         ui.forEach(o => o.set('visible', true));
         setPreviewModalOpen(true);
     };
@@ -624,238 +637,328 @@ const CustomizeProduct = () => {
     );
 
     const PreviewModal = () => (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-6 rounded-xl max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
-                <button className="absolute top-4 right-4 text-2xl font-bold hover:text-gray-600" onClick={() => setPreviewModalOpen(false)}>×</button>
-                <h2 className="text-xl font-bold mb-4 text-center">Design Preview</h2>
+        <div className="fixed inset-0 bg-white/40 backdrop-blur-md flex items-center justify-center z-[1000] p-4">
+            <div className="bg-white rounded-[2.5rem] w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col shadow-2xl">
+                {/* Header */}
+                <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <div>
+                        <h2 className="text-2xl font-black uppercase tracking-tighter m-0 text-gray-800">Design Preview</h2>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1 opacity-60">Review your customization before ordering</p>
+                    </div>
+                    <button
+                        onClick={() => setPreviewModalOpen(false)}
+                        className="w-10 h-10 flex items-center justify-center bg-white border border-gray-200 rounded-full hover:rotate-90 hover:bg-gray-100 transition-all duration-300 text-gray-400 hover:text-red-500 shadow-sm"
+                    >
+                        <FaTimes />
+                    </button>
+                </div>
 
-                {/* Product Details Section */}
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
-                    <h3 className="font-bold text-lg mb-3 text-gray-800">Product Details</h3>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                            <span className="font-semibold text-gray-600">Product Name:</span>
-                            <span className="ml-2 text-gray-800">{template.name}</span>
+                {/* Content - Scrollable */}
+                <div className="flex-1 overflow-y-auto p-6 md:p-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                        {/* Left: Product Specs Sidebar */}
+                        <div className="lg:col-span-4 space-y-6">
+                            <div className="bg-gray-50 rounded-[2rem] p-6 border border-gray-100">
+                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-500 mb-6">Product Technicals</h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-gray-400">PRODUCT</span>
+                                        <span className="text-sm font-black text-gray-700">{template.name}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-gray-400">CATEGORY</span>
+                                        <Tag color="blue" className="m-0 border-none px-3 font-black text-[10px] uppercase rounded-full">{template.category}</Tag>
+                                    </div>
+                                    {template.productSize && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-gray-400">CAPACITY/SIZE</span>
+                                            <span className="text-sm font-black text-gray-700">{template.productSize}</span>
+                                        </div>
+                                    )}
+                                    {template.printSize && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-gray-400">PRINT AREA</span>
+                                            <span className="text-sm font-black text-gray-700">{template.printSize}</span>
+                                        </div>
+                                    )}
+                                    <div className="pt-4 mt-4 border-t border-gray-200/50 space-y-2">
+                                        <div className="flex justify-between items-center text-[10px] font-bold text-gray-500">
+                                            <span>Base Price</span>
+                                            <span className="text-gray-700 font-black">₹{template.basePrice}</span>
+                                        </div>
+                                        {template.packingCharges > 0 && (
+                                            <div className="flex justify-between items-center text-[10px] font-bold text-gray-500">
+                                                <span>Packing (per unit)</span>
+                                                <span className="text-gray-700 font-black">₹{template.packingCharges}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-center text-[10px] font-bold text-gray-500">
+                                            <span>Shipping Fee</span>
+                                            <span className={template.shippingCharges > 0 ? 'text-gray-700 font-black' : 'text-green-600 font-black'}>
+                                                {template.shippingCharges > 0 ? `₹${template.shippingCharges}` : 'FREE'}
+                                            </span>
+                                        </div>
+                                        <div className="pt-2 border-t border-dashed border-gray-200 flex justify-between items-center">
+                                            <span className="text-xs font-black text-gray-400">EST. TOTAL</span>
+                                            <span className="text-2xl font-black text-green-600">₹{template.basePrice + (template.packingCharges || 0) + (template.shippingCharges || 0)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-blue-50/50 rounded-[2rem] p-6 border border-blue-100/50">
+                                <p className="text-[11px] text-blue-600/70 font-bold leading-relaxed">
+                                    Kindly note: The colors on your screen may slightly differ from the actual printed product due to screen calibration.
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <span className="font-semibold text-gray-600">Category:</span>
-                            <span className="ml-2 text-gray-800">{template.category}</span>
-                        </div>
-                        {template.brand && (
-                            <div>
-                                <span className="font-semibold text-gray-600">Brand:</span>
-                                <span className="ml-2 text-gray-800">{template.brand}</span>
+
+                        {/* Right: Visual Previews */}
+                        <div className="lg:col-span-8 flex flex-col gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Flat Design View */}
+                                <div className="flex flex-col gap-3">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-4">2D Design Layout</span>
+                                    <div className="bg-gray-50 rounded-[2.5rem] aspect-square flex items-center justify-center p-8 relative overflow-hidden group">
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-gray-200/20 to-transparent"></div>
+                                        <img src={previewImage} alt="Final" className="max-h-full max-w-full object-contain drop-shadow-2xl z-10 transition-transform duration-500 group-hover:scale-110" />
+                                        {template.overlayImageUrl && (
+                                            <img
+                                                src={template.overlayImageUrl}
+                                                alt="Mockup"
+                                                className="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-40 z-20 mix-blend-multiply"
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* 3D View (If applicable) */}
+                                {(template?.wrapType === 'mug' || template?.wrapType === 'bottle' || showMugPreview) && (
+                                    <div className="flex flex-col gap-3">
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-4">3D Realistic Mockup</span>
+                                        <div className="bg-gray-50 rounded-[2.5rem] aspect-square flex items-center justify-center relative overflow-hidden group">
+                                            <div className="absolute inset-0 bg-gradient-to-bl from-indigo-100/30 to-transparent"></div>
+                                            <div className="scale-[0.8] transition-transform duration-500 group-hover:scale-[0.85]">
+                                                <MugWrapPreview
+                                                    photoUrl={mugPreviewUrl || previewImage}
+                                                    wrapType={template?.wrapType || (template.category === 'Mug' ? 'mug' : 'bottle')}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                        {template.modelName && (
-                            <div>
-                                <span className="font-semibold text-gray-600">Model:</span>
-                                <span className="ml-2 text-gray-800">{template.modelName}</span>
-                            </div>
-                        )}
-                        {template.caseType && template.caseType !== 'None' && (
-                            <div>
-                                <span className="font-semibold text-gray-600">Case Type:</span>
-                                <span className="ml-2 text-gray-800">{template.caseType}</span>
-                            </div>
-                        )}
-                        {template.productSize && (
-                            <div>
-                                <span className="font-semibold text-gray-600">Product Size:</span>
-                                <span className="ml-2 text-gray-800">{template.productSize}</span>
-                            </div>
-                        )}
-                        {template.printSize && (
-                            <div>
-                                <span className="font-semibold text-gray-600">Print Size:</span>
-                                <span className="ml-2 text-gray-800">{template.printSize}</span>
-                            </div>
-                        )}
-                        {template.moq && (
-                            <div>
-                                <span className="font-semibold text-gray-600">MOQ:</span>
-                                <span className="ml-2 text-gray-800">{template.moq}</span>
-                            </div>
-                        )}
-                        <div className="col-span-2">
-                            <span className="font-semibold text-gray-600">Price:</span>
-                            <span className="ml-2 text-green-600 font-bold text-lg">₹{template.basePrice}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Preview Image */}
-                <div className="relative flex justify-center bg-gray-100 rounded p-4 h-[400px] mb-4">
-                    <img src={previewImage} alt="Final" className="h-full object-contain" />
-                    {template.overlayImageUrl && <img src={template.overlayImageUrl} alt="Mockup" className="absolute h-full object-contain pointer-events-none" />}
-                </div>
-
-                <div className="flex justify-end gap-2">
-                    <button className="px-4 py-2 border rounded hover:bg-gray-50" onClick={() => setPreviewModalOpen(false)}>Close</button>
-                    <button className="px-6 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700" onClick={() => { setPreviewModalOpen(false); handleAddToCart(true); }}>Buy Now</button>
+                {/* Footer Buttons */}
+                <div className="p-8 border-t border-gray-100 bg-white flex flex-col md:flex-row gap-4">
+                    <button
+                        onClick={() => setPreviewModalOpen(false)}
+                        className="flex-1 py-5 rounded-2xl border-2 border-gray-100 font-black uppercase tracking-wider text-gray-400 hover:bg-gray-50 transition-all"
+                    >
+                        Back to Editor
+                    </button>
+                    <button
+                        onClick={() => { setPreviewModalOpen(false); handleAddToCart(true); }}
+                        className="flex-[2] py-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest shadow-xl shadow-indigo-200 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3"
+                    >
+                        Place Order Successfully <span className="text-xl">→</span>
+                    </button>
                 </div>
             </div>
         </div>
     );
 
     return (
-        <div className="container mx-auto p-4 flex flex-col lg:flex-row h-[calc(100vh-80px)] gap-6">
-            {previewModalOpen && <PreviewModal />}
-            <div className="flex-1 bg-gray-100 rounded-xl flex items-center justify-center relative overflow-hidden">
-                <div className="shadow-2xl border-[10px] border-white rounded-[2rem] bg-white">
-                    <canvas ref={canvasRef} />
-                </div>
-                <button onClick={handlePreview} className="absolute top-4 right-4 bg-white px-4 py-2 rounded shadow font-bold">👁️ Preview</button>
-
-                {/* ─── LIVE 3D WRAP PREVIEW (for Mugs/Bottles) ─── */}
-                {(template?.wrapType === 'mug' || template?.wrapType === 'bottle' || showMugPreview) && mugPreviewUrl && (
-                    <div className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none">
-                        <div className="pointer-events-auto scale-75 origin-bottom translate-y-4">
-                            <MugWrapPreview
-                                photoUrl={mugPreviewUrl}
-                                wrapType={template?.wrapType || 'mug'}
-                            />
+        <Layout style={{ minHeight: 'calc(100vh - 80px)', background: '#f8fafc' }}>
+            <Content style={{ padding: '24px 16px' }}>
+                <div className="container mx-auto flex flex-col lg:flex-row min-h-[calc(100vh-128px)] gap-6">
+                    {previewModalOpen && <PreviewModal />}
+                    <Card
+                        className="flex-1 relative flex items-center justify-center"
+                        style={{ borderRadius: 20 }}
+                        bodyStyle={{ padding: 16, height: '100%', overflow: 'visible' }}
+                    >
+                        <div className="shadow-2xl border-[10px] border-white rounded-[2rem] bg-white inline-block">
+                            <canvas ref={canvasRef} />
                         </div>
-                    </div>
-                )}
-            </div>
+                        <Button
+                            type="primary"
+                            onClick={handlePreview}
+                            style={{ position: 'absolute', top: 16, right: 16 }}
+                        >
+                            👁️ Preview
+                        </Button>
 
-            <div className="w-full lg:w-[400px] bg-white shadow-xl rounded-xl flex flex-col h-full border">
-                <div className="p-4 border-b">
-                    <h1 className="text-xl font-bold">{template.name}</h1>
-                    <p className="text-green-600 font-bold">₹{template.basePrice}</p>
-                </div>
-                <div className="flex border-b bg-gray-50">
-                    <TabButton name="image" icon="📷" label="Images" />
-                    <TabButton name="text" icon="T" label="Text" />
-                    <TabButton name="emoji" icon="😊" label="Emoji" />
-                    <TabButton name="shapes" icon="🔷" label="Shapes" />
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-                    {activeTab === 'image' && (
-                        <div className="space-y-4">
-                            <button onClick={() => fileInputRef.current.click()} className="w-full border-2 border-dashed border-indigo-300 py-6 rounded-lg text-indigo-600 hover:bg-indigo-50 font-medium">+ Upload Photo</button>
-                            <input type="file" ref={fileInputRef} hidden onChange={handleImageUpload} />
+
+                    </Card>
+
+                    <Card
+                        className="w-full lg:w-[400px] flex flex-col h-full"
+                        style={{ borderRadius: 20 }}
+                        bodyStyle={{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column' }}
+                    >
+                        <div className="p-4 border-b group">
+                            <Title level={4} style={{ marginBottom: 4 }}>{template.name}</Title>
+                            <div className="flex items-center justify-between">
+                                <Text type="success" className="text-lg font-black" strong>₹{template.basePrice + (template.packingCharges || 0)}</Text>
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[10px] font-black uppercase text-gray-400 tracking-tighter">
+                                        {template.shippingCharges > 0 ? `+ ₹${template.shippingCharges} Shipping` : 'FREE Delivery'}
+                                    </span>
+                                    {template.packingCharges > 0 && (
+                                        <span className="text-[9px] text-gray-300 font-bold italic">Inc. Packing Charges</span>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                    )}
-                    {activeTab === 'text' && (
-                        <div className="space-y-4">
-                            <button onClick={() => addToCanvas(new fabric.IText('Your Text', { fontFamily: 'Arial', fontSize: 24, fill: '#000000' }))} className="w-full bg-white border py-3 rounded hover:bg-gray-100 font-serif text-lg">Add Heading</button>
-                            {selectedObject && (selectedObject.type === 'i-text' || selectedObject.type === 'text') && (
-                                <div className="p-4 bg-white border rounded space-y-3">
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-600 mb-1 block">Text Color</label>
-                                        <input
-                                            type="color"
-                                            value={selectedObject.fill || '#000000'}
-                                            onChange={(e) => {
-                                                selectedObject.set('fill', e.target.value);
-                                                canvas.renderAll();
-                                            }}
-                                            className="w-full h-10 rounded border cursor-pointer"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-600 mb-1 block">Font Size</label>
-                                        <input
-                                            type="number"
-                                            min="8"
-                                            max="200"
-                                            value={selectedObject.fontSize || 24}
-                                            onChange={(e) => {
-                                                selectedObject.set('fontSize', Number(e.target.value));
-                                                canvas.renderAll();
-                                            }}
-                                            className="w-full border p-2 rounded"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-600 mb-1 block">Font Style</label>
-                                        <select
-                                            value={selectedObject.fontFamily || 'Arial'}
-                                            onChange={(e) => {
-                                                selectedObject.set('fontFamily', e.target.value);
-                                                canvas.renderAll();
-                                            }}
-                                            className="w-full border p-2 rounded"
-                                        >
-                                            <option value="Arial">Arial</option>
-                                            <option value="Times New Roman">Times New Roman</option>
-                                            <option value="Courier New">Courier New</option>
-                                            <option value="Georgia">Georgia</option>
-                                            <option value="Verdana">Verdana</option>
-                                            <option value="Impact">Impact</option>
-                                            <option value="Comic Sans MS">Comic Sans MS</option>
-                                            <option value="Roboto">Roboto</option>
-                                            <option value="Open Sans">Open Sans</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-600 mb-2 block">Text Formatting</label>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    const isBold = selectedObject.fontWeight === 'bold';
-                                                    selectedObject.set('fontWeight', isBold ? 'normal' : 'bold');
-                                                    canvas.renderAll();
-                                                }}
-                                                className={`flex-1 p-2 border rounded text-sm font-semibold ${selectedObject.fontWeight === 'bold'
-                                                    ? 'bg-blue-500 text-white'
-                                                    : 'bg-gray-50 hover:bg-gray-100'
-                                                    }`}
-                                            >
-                                                <strong>B</strong>
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    const isItalic = selectedObject.fontStyle === 'italic';
-                                                    selectedObject.set('fontStyle', isItalic ? 'normal' : 'italic');
-                                                    canvas.renderAll();
-                                                }}
-                                                className={`flex-1 p-2 border rounded text-sm ${selectedObject.fontStyle === 'italic'
-                                                    ? 'bg-blue-500 text-white italic'
-                                                    : 'bg-gray-50 hover:bg-gray-100'
-                                                    }`}
-                                            >
-                                                <em>I</em>
-                                            </button>
+                        <div className="flex border-b bg-gray-50">
+                            <TabButton name="image" icon="📷" label="Images" />
+                            <TabButton name="text" icon="T" label="Text" />
+                            <TabButton name="emoji" icon="😊" label="Emoji" />
+                            <TabButton name="shapes" icon="🔷" label="Shapes" />
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                            {activeTab === 'image' && (
+                                <div className="space-y-4">
+                                    <button onClick={() => fileInputRef.current.click()} className="w-full border-2 border-dashed border-indigo-300 py-6 rounded-lg text-indigo-600 hover:bg-indigo-50 font-medium">+ Upload Photo</button>
+                                    <input type="file" ref={fileInputRef} hidden onChange={handleImageUpload} />
+                                </div>
+                            )}
+                            {activeTab === 'text' && (
+                                <div className="space-y-4">
+                                    <button onClick={() => addToCanvas(new fabric.IText('Your Text', { fontFamily: 'Arial', fontSize: 24, fill: '#000000' }))} className="w-full bg-white border py-3 rounded hover:bg-gray-100 font-serif text-lg">Add Heading</button>
+                                    {selectedObject && (selectedObject.type === 'i-text' || selectedObject.type === 'text') && (
+                                        <div className="p-4 bg-white border rounded space-y-3">
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-600 mb-1 block">Text Color</label>
+                                                <input
+                                                    type="color"
+                                                    value={selectedObject.fill || '#000000'}
+                                                    onChange={(e) => {
+                                                        selectedObject.set('fill', e.target.value);
+                                                        canvas.renderAll();
+                                                    }}
+                                                    className="w-full h-10 rounded border cursor-pointer"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-600 mb-1 block">Font Size</label>
+                                                <input
+                                                    type="number"
+                                                    min="8"
+                                                    max="200"
+                                                    value={selectedObject.fontSize || 24}
+                                                    onChange={(e) => {
+                                                        selectedObject.set('fontSize', Number(e.target.value));
+                                                        canvas.renderAll();
+                                                    }}
+                                                    className="w-full border p-2 rounded"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-600 mb-1 block">Font Style</label>
+                                                <select
+                                                    value={selectedObject.fontFamily || 'Arial'}
+                                                    onChange={(e) => {
+                                                        selectedObject.set('fontFamily', e.target.value);
+                                                        canvas.renderAll();
+                                                    }}
+                                                    className="w-full border p-2 rounded"
+                                                >
+                                                    <option value="Arial">Arial</option>
+                                                    <option value="Times New Roman">Times New Roman</option>
+                                                    <option value="Courier New">Courier New</option>
+                                                    <option value="Georgia">Georgia</option>
+                                                    <option value="Verdana">Verdana</option>
+                                                    <option value="Impact">Impact</option>
+                                                    <option value="Comic Sans MS">Comic Sans MS</option>
+                                                    <option value="Roboto">Roboto</option>
+                                                    <option value="Open Sans">Open Sans</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-600 mb-2 block">Text Formatting</label>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            const isBold = selectedObject.fontWeight === 'bold';
+                                                            selectedObject.set('fontWeight', isBold ? 'normal' : 'bold');
+                                                            canvas.renderAll();
+                                                        }}
+                                                        className={`flex-1 p-2 border rounded text-sm font-semibold ${selectedObject.fontWeight === 'bold'
+                                                            ? 'bg-blue-500 text-white'
+                                                            : 'bg-gray-50 hover:bg-gray-100'
+                                                            }`}
+                                                    >
+                                                        <strong>B</strong>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            const isItalic = selectedObject.fontStyle === 'italic';
+                                                            selectedObject.set('fontStyle', isItalic ? 'normal' : 'italic');
+                                                            canvas.renderAll();
+                                                        }}
+                                                        className={`flex-1 p-2 border rounded text-sm ${selectedObject.fontStyle === 'italic'
+                                                            ? 'bg-blue-500 text-white italic'
+                                                            : 'bg-gray-50 hover:bg-gray-100'
+                                                            }`}
+                                                    >
+                                                        <em>I</em>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
+                                    )}
+                                </div>
+                            )}
+                            {activeTab === 'emoji' && (
+                                <EmojiPicker onEmojiClick={(d) => addToCanvas(new fabric.IText(d.emoji, { fontSize: 50 }))} width="100%" height={350} />
+                            )}
+                            {activeTab === 'shapes' && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <button onClick={() => addToCanvas(new fabric.Rect({ width: 80, height: 80, fill: '#ff4444' }))} className="aspect-square bg-red-500 rounded"></button>
+                                    <button onClick={() => addToCanvas(new fabric.Circle({ radius: 40, fill: '#44ff44' }))} className="aspect-square bg-green-500 rounded-full"></button>
+                                    <button onClick={() => addToCanvas(new fabric.Triangle({ width: 80, height: 80, fill: '#4444ff' }))} className="aspect-square bg-blue-500" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }}></button>
+                                </div>
+                            )}
+                            {selectedObject && (
+                                <div className="mt-6 p-4 bg-white border rounded shadow-sm">
+                                    <p className="text-xs font-bold text-gray-400 mb-3 uppercase">Controls</p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { canvas.bringToFront(selectedObject); if (canvas.overlayImage) canvas.bringToFront(canvas.overlayImage); canvas.renderAll(); }} className="flex-1 p-2 bg-gray-50 text-[11px] font-bold border rounded">Front</button>
+                                        <button onClick={() => { canvas.sendToBack(selectedObject); if (canvas.productImage) canvas.sendToBack(canvas.productImage); canvas.renderAll(); }} className="flex-1 p-2 bg-gray-50 text-[11px] font-bold border rounded">Back</button>
+                                        <button onClick={() => { canvas.remove(selectedObject); setSelectedObject(null); canvas.renderAll(); }} className="flex-1 p-2 bg-red-50 text-red-600 text-[11px] font-bold border rounded">Delete</button>
                                     </div>
                                 </div>
                             )}
                         </div>
-                    )}
-                    {activeTab === 'emoji' && (
-                        <EmojiPicker onEmojiClick={(d) => addToCanvas(new fabric.IText(d.emoji, { fontSize: 50 }))} width="100%" height={350} />
-                    )}
-                    {activeTab === 'shapes' && (
-                        <div className="grid grid-cols-3 gap-2">
-                            <button onClick={() => addToCanvas(new fabric.Rect({ width: 80, height: 80, fill: '#ff4444' }))} className="aspect-square bg-red-500 rounded"></button>
-                            <button onClick={() => addToCanvas(new fabric.Circle({ radius: 40, fill: '#44ff44' }))} className="aspect-square bg-green-500 rounded-full"></button>
-                            <button onClick={() => addToCanvas(new fabric.Triangle({ width: 80, height: 80, fill: '#4444ff' }))} className="aspect-square bg-blue-500" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }}></button>
+                        <div className="p-4 border-t space-y-3 bg-white">
+                            <Button
+                                block
+                                type="default"
+                                disabled={!!loadingAction}
+                                onClick={() => handleAddToCart(false)}
+                            >
+                                {loadingAction === 'cart' ? 'ADDING...' : 'ADD TO CART'}
+                            </Button>
+                            <Button
+                                block
+                                type="primary"
+                                size="large"
+                                disabled={!!loadingAction}
+                                onClick={() => handleAddToCart(true)}
+                            >
+                                {loadingAction === 'order' ? 'PLACING...' : `BUY NOW - ₹${template.basePrice}`}
+                            </Button>
                         </div>
-                    )}
-                    {selectedObject && (
-                        <div className="mt-6 p-4 bg-white border rounded shadow-sm">
-                            <p className="text-xs font-bold text-gray-400 mb-3 uppercase">Controls</p>
-                            <div className="flex gap-2">
-                                <button onClick={() => { canvas.bringToFront(selectedObject); if (canvas.overlayImage) canvas.bringToFront(canvas.overlayImage); canvas.renderAll(); }} className="flex-1 p-2 bg-gray-50 text-[11px] font-bold border rounded">Front</button>
-                                <button onClick={() => { canvas.sendToBack(selectedObject); if (canvas.productImage) canvas.sendToBack(canvas.productImage); canvas.renderAll(); }} className="flex-1 p-2 bg-gray-50 text-[11px] font-bold border rounded">Back</button>
-                                <button onClick={() => { canvas.remove(selectedObject); setSelectedObject(null); canvas.renderAll(); }} className="flex-1 p-2 bg-red-50 text-red-600 text-[11px] font-bold border rounded">Delete</button>
-                            </div>
-                        </div>
-                    )}
+                    </Card>
                 </div>
-                <div className="p-4 border-t space-y-3 bg-white">
-                    <button onClick={() => handleAddToCart(false)} className="w-full border-2 border-blue-600 text-blue-600 font-bold py-3 rounded-xl disabled:opacity-50" disabled={!!loadingAction}>
-                        {loadingAction === 'cart' ? 'ADDING...' : 'ADD TO CART'}
-                    </button>
-                    <button onClick={() => handleAddToCart(true)} className="w-full bg-blue-600 text-white font-black py-4 rounded-xl text-lg shadow-lg" disabled={!!loadingAction}>
-                        {loadingAction === 'order' ? 'PLACING...' : `BUY NOW - ₹${template.basePrice}`}
-                    </button>
-                </div>
-            </div>
-        </div>
+            </Content>
+        </Layout>
     );
 };
 

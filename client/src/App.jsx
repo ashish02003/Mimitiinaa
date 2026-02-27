@@ -17,6 +17,8 @@ import Profile from './pages/Profile';
 import Cart from './pages/Cart';
 import ProductCategory from './pages/ProductCategory';
 import TemplateDetails from './pages/TemplateDetails';
+import Checkout from './pages/Checkout';
+import OrderSuccess from './pages/OrderSuccess';
 import { FaShoppingCart, FaUser, FaChevronDown, FaChevronUp, FaSignOutAlt, FaUserCircle, FaTimes } from 'react-icons/fa';
 import { Toaster } from 'react-hot-toast';
 import { CartProvider, useCart } from './context/CartContext';
@@ -99,20 +101,10 @@ const Navigation = () => {
                                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
                             </Link>
                             {user && user.role === 'admin' && (
-                                <>
-                                    <Link to="/admin" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors uppercase tracking-wider relative group">
-                                        Dashboard
-                                        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
-                                    </Link>
-                                    <Link to="/admin/orders" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors uppercase tracking-wider relative group">
-                                        Orders
-                                        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
-                                    </Link>
-                                    <Link to="/admin/users" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors uppercase tracking-wider relative group">
-                                        Users
-                                        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
-                                    </Link>
-                                </>
+                                <Link to="/admin" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors uppercase tracking-wider relative group">
+                                    Dashboard
+                                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
+                                </Link>
                             )}
                         </div>
                         {/* Cart icon (shown for non-admin users) */}
@@ -178,8 +170,29 @@ const Navigation = () => {
                                                     className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                                                 >
                                                     <FaUserCircle className="text-base text-gray-400" />
-                                                    My Dashboard
+                                                    My Profile
                                                 </Link>
+                                                {user.role === 'admin' && (
+                                                    <div className="border-t border-gray-50 my-1 pt-1">
+                                                        <p className="px-5 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">Admin Control</p>
+                                                        <Link
+                                                            to="/admin/orders"
+                                                            onClick={() => setIsProfileOpen(false)}
+                                                            className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                        >
+                                                            <FaShoppingCart className="text-base text-gray-400" />
+                                                            Manage Orders
+                                                        </Link>
+                                                        <Link
+                                                            to="/admin/users"
+                                                            onClick={() => setIsProfileOpen(false)}
+                                                            className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                        >
+                                                            <FaUser className="text-base text-gray-400" />
+                                                            Manage Users
+                                                        </Link>
+                                                    </div>
+                                                )}
                                                 {user.role !== 'admin' && (
                                                     <Link
                                                         to="/cart"
@@ -214,7 +227,7 @@ const Navigation = () => {
                         )}
                     </div>
                 </nav>
-            </header>
+            </header >
         </>
     );
 };
@@ -245,6 +258,16 @@ function App() {
                             <Route path="/cart" element={
                                 <ProtectedRoute>
                                     <Cart />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/checkout" element={
+                                <ProtectedRoute>
+                                    <Checkout />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/order-success/:id" element={
+                                <ProtectedRoute>
+                                    <OrderSuccess />
                                 </ProtectedRoute>
                             } />
 

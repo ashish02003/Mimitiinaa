@@ -7,6 +7,7 @@ const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
+    const [selectedItemIds, setSelectedItemIds] = useState([]); // ✅ NEW: Track selected items for checkout
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
     const API_URL = 'http://localhost:5000/api/cart';
@@ -18,6 +19,8 @@ export const CartProvider = ({ children }) => {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             setCartItems(data);
+            // By default, select all items
+            setSelectedItemIds(data.map(item => item._id));
         } catch (error) {
             console.error('Error fetching cart:', error);
         } finally {
@@ -30,6 +33,7 @@ export const CartProvider = ({ children }) => {
             fetchCartItems();
         } else {
             setCartItems([]);
+            setSelectedItemIds([]);
             setLoading(false);
         }
     }, [user]);
@@ -45,6 +49,8 @@ export const CartProvider = ({ children }) => {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             setCartItems([...cartItems, data]);
+            // Automatically select the newly added item
+            setSelectedItemIds(prev => [...prev, data._id]);
             toast.success('Added to cart!');
             return true;
         } catch (error) {
@@ -59,10 +65,17 @@ export const CartProvider = ({ children }) => {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             setCartItems(cartItems.filter(item => item._id !== id));
+            setSelectedItemIds(prev => prev.filter(itemId => itemId !== id));
             toast.success('Removed from cart');
         } catch (error) {
             toast.error('Error removing item');
         }
+    };
+
+    const toggleSelection = (id) => {
+        setSelectedItemIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
     };
 
     const updateQuantity = async (id, quantity) => {
@@ -85,13 +98,29 @@ export const CartProvider = ({ children }) => {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             setCartItems([]);
+            setSelectedItemIds([]);
         } catch (error) {
             console.error('Error clearing cart:', error);
         }
     };
 
+    const getSelectedItems = () => {
+        return cartItems.filter(item => selectedItemIds.includes(item._id));
+    };
+
     return (
-        <CartContext.Provider value={{ cartItems, loading, addToCart, removeFromCart, updateQuantity, clearCart, fetchCartItems }}>
+        <CartContext.Provider value={{
+            cartItems,
+            selectedItemIds,
+            toggleSelection,
+            getSelectedItems,
+            loading,
+            addToCart,
+            removeFromCart,
+            updateQuantity,
+            clearCart,
+            fetchCartItems
+        }}>
             {children}
         </CartContext.Provider>
     );

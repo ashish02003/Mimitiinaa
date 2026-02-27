@@ -31,7 +31,9 @@ app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
-app.use('/api/customization', require('./routes/customizationRoutes')); // 👈 ADD THIS
+app.use('/api/customization', require('./routes/customizationRoutes'));
+app.use('/api/payment', require('./routes/paymentRoutes'));    // ✅ Razorpay
+app.use('/api/shipping', require('./routes/shippingRoutes'));   // ✅ NimbusPost webhook + tracking
 
 app.get('/', (req, res) => {
     res.send('API is running...');

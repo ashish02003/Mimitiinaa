@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { Layout, Row, Col, Card, Typography, Button, Tag, Skeleton, Result, Space } from 'antd';
 import { FaChevronLeft } from 'react-icons/fa';
+
+const { Content } = Layout;
+const { Title, Text } = Typography;
 
 const TemplateDetails = () => {
     const { id } = useParams();
@@ -29,133 +33,165 @@ const TemplateDetails = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-l-4 border-blue-600"></div>
-            </div>
+            <Layout style={{ minHeight: '100vh' }}>
+                <Content style={{ padding: '40px 16px' }}>
+                    <div className="max-w-5xl mx-auto">
+                        <Skeleton active avatar paragraph={{ rows: 6 }} />
+                    </div>
+                </Content>
+            </Layout>
         );
     }
 
     if (error || !template) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8">
-                <p className="text-gray-500 font-bold mb-4">{error || 'Product not found'}</p>
-                <Link to="/" className="text-blue-600 font-bold hover:underline">← Back to Home</Link>
-            </div>
+            <Layout style={{ minHeight: '100vh' }}>
+                <Content style={{ padding: '40px 16px' }}>
+                    <Result
+                        status="404"
+                        title="Product not found"
+                        subTitle={error || 'The product you are looking for does not exist.'}
+                        extra={
+                            <Link to="/">
+                                <Button type="primary">Back to Home</Button>
+                            </Link>
+                        }
+                    />
+                </Content>
+            </Layout>
         );
     }
 
     return (
-        <div className="min-h-screen bg-white pb-20">
-            {/* Back link */}
-            <div className="border-b bg-gray-50">
-                <div className="container mx-auto px-4 py-3">
-                    <button
+        <Layout style={{ minHeight: '100vh', background: '#f5f5f5' }}>
+            <Content style={{ padding: '24px 16px 48px' }}>
+                <div className="max-w-5xl mx-auto">
+                    <Button
+                        type="link"
+                        icon={<FaChevronLeft />}
                         onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-bold text-sm uppercase tracking-wide"
+                        style={{ paddingLeft: 0, marginBottom: 16 }}
                     >
-                        <FaChevronLeft className="text-sm" />
                         Back
-                    </button>
+                    </Button>
+
+                    <Card bordered={false} style={{ borderRadius: 16 }}>
+                        <Row gutter={[32, 32]} align="top">
+                            {/* Left: Sample Preview */}
+                            <Col xs={24} md={12}>
+                                <Title level={4}>Sample Preview</Title>
+                                <Card
+                                    bordered
+                                    style={{ borderRadius: 16, marginTop: 8 }}
+                                    bodyStyle={{ padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 320 }}
+                                >
+                                    <img
+                                        src={template.demoImageUrl || template.previewImage || template.backgroundImageUrl}
+                                        alt={template.name}
+                                        style={{ maxWidth: '100%', maxHeight: 360, objectFit: 'contain' }}
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = 'https://placehold.co/500x500/f8fafc/6366f1?text=' + template.name.replace(/ /g, '+');
+                                        }}
+                                    />
+                                </Card>
+                                <Text type="secondary" style={{ display: 'block', marginTop: 12, textAlign: 'center', fontStyle: 'italic' }}>
+                                    This is how your design will look when you upload your photo.
+                                </Text>
+                            </Col>
+
+                            {/* Right: Product Details */}
+                            <Col xs={24} md={12}>
+                                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                                    <div>
+                                        <Title level={3} style={{ marginBottom: 4 }}>{template.name}</Title>
+                                        <Space size="small">
+                                            <Tag color="blue">{template.category}</Tag>
+                                            {template.brand && <Tag>{template.brand}</Tag>}
+                                        </Space>
+                                    </div>
+
+                                    <Card bordered style={{ borderRadius: 16 }}>
+                                        <Space direction="vertical" style={{ width: '100%' }} size="small">
+                                            <div className="flex justify-between items-center">
+                                                <Text strong>Price</Text>
+                                                <Title level={3} style={{ margin: 0, color: '#16a34a' }}>
+                                                    ₹{template.basePrice}
+                                                </Title>
+                                            </div>
+                                            {template.modelName && (
+                                                <div className="flex justify-between items-center">
+                                                    <Text type="secondary">Model</Text>
+                                                    <Text>{template.modelName}</Text>
+                                                </div>
+                                            )}
+                                            {template.caseType && template.caseType !== 'None' && (
+                                                <div className="flex justify-between items-center">
+                                                    <Text type="secondary">Case Type</Text>
+                                                    <Text>{template.caseType}</Text>
+                                                </div>
+                                            )}
+                                            {template.variantNo && (
+                                                <div className="flex justify-between items-center">
+                                                    <Text type="secondary">Variant No</Text>
+                                                    <Text>{template.variantNo}</Text>
+                                                </div>
+                                            )}
+                                            {template.productSize && (
+                                                <div className="flex justify-between items-center">
+                                                    <Text type="secondary">Product Size</Text>
+                                                    <Text>{template.productSize}</Text>
+                                                </div>
+                                            )}
+                                            {template.printSize && (
+                                                <div className="flex justify-between items-center">
+                                                    <Text type="secondary">Print Size</Text>
+                                                    <Text>{template.printSize}</Text>
+                                                </div>
+                                            )}
+                                            {template.moq != null && (
+                                                <div className="flex justify-between items-center">
+                                                    <Text type="secondary">MOQ</Text>
+                                                    <Text>{template.moq}</Text>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center bg-indigo-50/50 p-2 rounded-lg mt-2">
+                                                <Text type="secondary" className="text-indigo-600 font-bold uppercase tracking-tighter text-[10px]">Packing Charges</Text>
+                                                <Text strong className={template.packingCharges > 0 ? 'text-gray-800' : 'text-green-600'}>
+                                                    {template.packingCharges > 0 ? `₹${template.packingCharges}` : 'FREE'}
+                                                </Text>
+                                            </div>
+                                            <div className="flex justify-between items-center bg-blue-50/50 p-2 rounded-lg">
+                                                <Text type="secondary" className="text-blue-600 font-bold uppercase tracking-tighter text-[10px]">Shipping Fee</Text>
+                                                <Text strong className={template.shippingCharges > 0 ? 'text-gray-800' : 'text-green-600'}>
+                                                    {template.shippingCharges > 0 ? `₹${template.shippingCharges}` : 'FREE DELIVERY'}
+                                                </Text>
+                                            </div>
+                                        </Space>
+                                    </Card>
+
+                                    <Space direction="vertical" style={{ width: '100%' }}>
+                                        <Button
+                                            type="primary"
+                                            size="large"
+                                            block
+                                            onClick={() => navigate(`/customize/${template._id}`)}
+                                        >
+                                            Customize Now
+                                        </Button>
+                                        <Link to={`/category/${template.category}`}>
+                                            <Button block>
+                                                View more in {template.category}
+                                            </Button>
+                                        </Link>
+                                    </Space>
+                                </Space>
+                            </Col>
+                        </Row>
+                    </Card>
                 </div>
-            </div>
-
-            <div className="container mx-auto px-4 py-8 max-w-5xl">
-                <div className="grid md:grid-cols-2 gap-8 md:gap-12">
-                    {/* Left: Sample Preview */}
-                    <div>
-                        <h2 className="text-xl font-black text-gray-900 mb-4 uppercase tracking-tight">Sample Preview</h2>
-                        <div className="bg-gray-100 rounded-2xl p-6 md:p-8 aspect-square flex items-center justify-center border border-gray-200">
-                            <img
-                                src={template.demoImageUrl || template.previewImage || template.backgroundImageUrl}
-                                alt={template.name}
-                                className="max-w-full max-h-full object-contain"
-                                onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = 'https://placehold.co/500x500/f8fafc/6366f1?text=' + template.name.replace(/ /g, '+');
-                                }}
-                            />
-                        </div>
-                        <p className="text-sm text-gray-500 mt-4 text-center italic">
-                            This is how your design will look when you upload your photo
-                        </p>
-                    </div>
-
-                    {/* Right: Product Details */}
-                    <div>
-                        <h2 className="text-xl font-black text-gray-900 mb-4 uppercase tracking-tight">Product Details</h2>
-                        
-                        <div className="mb-6">
-                            <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">{template.name}</h1>
-                            <p className="text-sm text-blue-600 font-bold uppercase tracking-wide">{template.category}</p>
-                        </div>
-
-                        <div className="bg-gray-50 rounded-xl p-6 space-y-4 border border-gray-100">
-                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                <span className="font-semibold text-gray-600">Price</span>
-                                <span className="text-green-600 font-black text-2xl">₹{template.basePrice}</span>
-                            </div>
-                            {template.brand && (
-                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                    <span className="font-semibold text-gray-600">Brand</span>
-                                    <span className="text-gray-800">{template.brand}</span>
-                                </div>
-                            )}
-                            {template.modelName && (
-                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                    <span className="font-semibold text-gray-600">Model</span>
-                                    <span className="text-gray-800">{template.modelName}</span>
-                                </div>
-                            )}
-                            {template.caseType && template.caseType !== 'None' && (
-                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                    <span className="font-semibold text-gray-600">Case Type</span>
-                                    <span className="text-gray-800">{template.caseType}</span>
-                                </div>
-                            )}
-                            {template.variantNo && (
-                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                    <span className="font-semibold text-gray-600">Variant No</span>
-                                    <span className="text-gray-800">{template.variantNo}</span>
-                                </div>
-                            )}
-                            {template.productSize && (
-                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                    <span className="font-semibold text-gray-600">Product Size</span>
-                                    <span className="text-gray-800">{template.productSize}</span>
-                                </div>
-                            )}
-                            {template.printSize && (
-                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                    <span className="font-semibold text-gray-600">Print Size</span>
-                                    <span className="text-gray-800">{template.printSize}</span>
-                                </div>
-                            )}
-                            {template.moq != null && (
-                                <div className="flex justify-between py-2">
-                                    <span className="font-semibold text-gray-600">MOQ</span>
-                                    <span className="text-gray-800">{template.moq}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mt-8 space-y-3">
-                            <button
-                                onClick={() => navigate(`/customize/${template._id}`)}
-                                className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-lg uppercase tracking-wider hover:bg-blue-700 transition-all shadow-lg active:scale-[0.98]"
-                            >
-                                Customize Now
-                            </button>
-                            <Link
-                                to={`/category/${template.category}`}
-                                className="block w-full text-center py-3 border-2 border-gray-200 rounded-xl font-bold text-gray-700 hover:border-blue-400 hover:text-blue-600 transition-all"
-                            >
-                                View more in {template.category}
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </Content>
+        </Layout>
     );
 };
 

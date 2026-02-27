@@ -66,6 +66,14 @@ const cartItemSchema = new mongoose.Schema({
     price: {
         type: Number,
         required: true
+    },
+    packingCharges: {
+        type: Number,
+        default: 0
+    },
+    shippingCharges: {
+        type: Number,
+        default: 0
     }
 }, { timestamps: true });
 

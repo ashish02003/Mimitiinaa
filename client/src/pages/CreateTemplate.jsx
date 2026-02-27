@@ -25,6 +25,8 @@ const CreateTemplate = () => {
     const [productSize, setProductSize] = useState('');
     const [printSize, setPrintSize] = useState('');
     const [moq, setMoq] = useState(1);
+    const [packingCharges, setPackingCharges] = useState(0);  // ✅ NEW
+    const [shippingCharges, setShippingCharges] = useState(0); // ✅ NEW
     const [categories, setCategories] = useState([]); // 👈 NEW
     const [activeTab, setActiveTab] = useState('background'); // background, shapes, text, elements
 
@@ -268,6 +270,8 @@ const CreateTemplate = () => {
                     setMoq(data.moq || 1);
                     setWrapType(data.wrapType || 'none');
                     setDemoImageUrl(data.demoImageUrl || '');
+                    setPackingCharges(data.packingCharges || 0);   // ✅ NEW
+                    setShippingCharges(data.shippingCharges || 0); // ✅ NEW
 
                     // Load canvas state
                     if (data.canvasSettings) {
@@ -1748,6 +1752,8 @@ const CreateTemplate = () => {
                 name,
                 category: category || (categories[0]?.name ?? ''),
                 basePrice: price,
+                packingCharges: packingCharges || 0,   // ✅ NEW
+                shippingCharges: shippingCharges || 0, // ✅ NEW
                 previewImage: previewImageUrl,
                 demoImageUrl: demoImageUrl || undefined,
                 backgroundImageUrl: finalBgUrl,
@@ -1902,6 +1908,68 @@ const CreateTemplate = () => {
                                                 />
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {/* ── Packing & Shipping Charges ─────────────────────── */}
+                                    <div className="mt-3 p-3 bg-indigo-50 rounded-2xl border border-indigo-100">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest m-0">💰 Charges (Set by Admin)</h4>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Packing Charges (per unit)</label>
+                                                    <label className="flex items-center gap-1.5 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={packingCharges === 0}
+                                                            onChange={(e) => setPackingCharges(e.target.checked ? 0 : 10)}
+                                                            className="w-3.5 h-3.5 rounded accent-indigo-600"
+                                                        />
+                                                        <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Free</span>
+                                                    </label>
+                                                </div>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">₹</span>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        disabled={packingCharges === 0}
+                                                        className={`w-full border-0 focus:ring-2 focus:ring-indigo-500 p-3 pl-7 rounded-xl text-sm transition-all font-bold ${packingCharges === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-slate-50'}`}
+                                                        placeholder="0"
+                                                        value={packingCharges}
+                                                        onChange={e => setPackingCharges(Number(e.target.value))}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Shipping Charges (flat)</label>
+                                                    <label className="flex items-center gap-1.5 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={shippingCharges === 0}
+                                                            onChange={(e) => setShippingCharges(e.target.checked ? 0 : 40)}
+                                                            className="w-3.5 h-3.5 rounded accent-indigo-600"
+                                                        />
+                                                        <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Free</span>
+                                                    </label>
+                                                </div>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">₹</span>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        disabled={shippingCharges === 0}
+                                                        className={`w-full border-0 focus:ring-2 focus:ring-indigo-500 p-3 pl-7 rounded-xl text-sm transition-all font-bold ${shippingCharges === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-slate-50'}`}
+                                                        placeholder="0"
+                                                        value={shippingCharges}
+                                                        onChange={e => setShippingCharges(Number(e.target.value))}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p className="text-[9px] text-indigo-400 mt-3 font-medium text-center">Final Price = (Base + Packing) × Qty + Shipping</p>
                                     </div>
 
                                     <div className="mt-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-100 shadow-sm relative overflow-hidden group">

@@ -92,7 +92,12 @@ const ProductCategory = () => {
 
                                     <div className="p-4 text-center">
                                         <h3 className="text-sm font-bold text-gray-800 mb-2 line-clamp-2 min-h-[2.5rem]">{template.name}</h3>
-                                        <p className="text-lg font-black text-green-600 mb-3">From ₹{template.basePrice}</p>
+                                        <div className="mb-3">
+                                            <p className="text-lg font-black text-green-600 m-0">₹{template.basePrice + (template.packingCharges || 0)}</p>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                                {template.shippingCharges === 0 ? 'Free Delivery' : `+ ₹${template.shippingCharges} Shipping`}
+                                            </p>
+                                        </div>
                                         <button
                                             onClick={() => navigate(`/product/${template._id}`)}
                                             className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-xs uppercase tracking-wide hover:bg-blue-700 transition-all"

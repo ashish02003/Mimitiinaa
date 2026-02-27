@@ -184,6 +184,16 @@ const templateSchema = new mongoose.Schema({
         type: String,
         enum: ['none', 'mug', 'bottle'],
         default: 'none'
+    },
+
+    // ─── Pricing Charges (set by Admin) ─────────────────────────────────────────
+    packingCharges: {
+        type: Number,
+        default: 0   // Extra packing cost per unit
+    },
+    shippingCharges: {
+        type: Number,
+        default: 0   // Flat shipping cost per order
     }
 }, { timestamps: true });
 

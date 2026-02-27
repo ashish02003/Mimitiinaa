@@ -3,56 +3,26 @@ import { useCart } from '../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     FaTrash, FaShoppingBag, FaPlus, FaMinus, FaTag,
-    FaTruck, FaShieldAlt, FaPencilAlt, FaArrowLeft, FaTimes, FaExclamationTriangle
+    FaTruck, FaShieldAlt, FaPencilAlt, FaArrowLeft, FaBox
 } from 'react-icons/fa';
+import { Layout, Row, Col, Card, Button, Typography, Empty, Modal, Tag as AntTag, Space, Divider } from 'antd';
 
-// Confirmation Popup Modal
-const ConfirmModal = ({ isOpen, onConfirm, onCancel, itemName }) => {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
-            {/* Modal */}
-            <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full animate-fadeIn">
-                <button onClick={onCancel} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors">
-                    <FaTimes className="text-gray-400" />
-                </button>
-                <div className="flex flex-col items-center text-center">
-                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
-                        <FaExclamationTriangle size={28} className="text-red-500" />
-                    </div>
-                    <h3 className="text-xl font-black text-gray-900 mb-2">Remove Item?</h3>
-                    <p className="text-gray-500 font-medium mb-6">
-                        Are you sure you want to remove <span className="font-black text-gray-800">"{itemName}"</span> from your cart?
-                    </p>
-                    <div className="flex gap-3 w-full">
-                        <button
-                            onClick={onCancel}
-                            className="flex-1 py-3 rounded-2xl border-2 border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-colors"
-                        >
-                            Keep Item
-                        </button>
-                        <button
-                            onClick={onConfirm}
-                            className="flex-1 py-3 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
-                        >
-                            Yes, Remove
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
+const { Content } = Layout;
+const { Title, Text } = Typography;
 
 const Cart = () => {
-    const { cartItems, removeFromCart, updateQuantity, loading } = useCart();
+    const { cartItems, selectedItemIds, toggleSelection, getSelectedItems, removeFromCart, updateQuantity, loading } = useCart();
     const navigate = useNavigate();
     const [removeModal, setRemoveModal] = useState({ isOpen: false, itemId: null, itemName: '' });
 
-    const totalPrice = cartItems.reduce((acc, item) => acc + (item.price * (item.quantity || 1)), 0);
-    const totalItems = cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0);
+    const selectedItems = getSelectedItems();
+
+    // Subtotal of SELECTED items
+    const subtotal = selectedItems.reduce((acc, item) => acc + (item.price * (item.quantity || 1)), 0);
+    const packingChargesTotal = selectedItems.reduce((acc, item) => acc + ((item.packingCharges || 0) * (item.quantity || 1)), 0);
+    const shippingChargesTotal = selectedItems.reduce((acc, item) => acc + (item.shippingCharges || 0), 0);
+    const totalPrice = subtotal + packingChargesTotal + shippingChargesTotal;
+    const totalItems = selectedItems.reduce((acc, item) => acc + (item.quantity || 1), 0);
 
     const handleRemoveClick = (item) => {
         setRemoveModal({
@@ -90,189 +60,282 @@ const Cart = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50/60 py-10">
-            <ConfirmModal
-                isOpen={removeModal.isOpen}
-                onConfirm={handleConfirmRemove}
-                onCancel={handleCancelRemove}
-                itemName={removeModal.itemName}
-            />
-
-            <div className="container mx-auto px-4 max-w-6xl">
-                {/* Header */}
-                <div className="flex items-center gap-4 mb-10">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:bg-gray-50 text-gray-500 hover:text-blue-600 transition-all"
-                    >
-                        <FaArrowLeft />
-                    </button>
-                    <div>
-                        <h1 className="text-4xl font-black text-gray-900 tracking-tight leading-none">Shopping Cart</h1>
-                        <p className="text-gray-400 font-medium mt-1">{totalItems} item{totalItems !== 1 ? 's' : ''} in your cart</p>
-                    </div>
-                </div>
-
-                {cartItems.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-                        <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-                            <FaShoppingBag size={40} className="text-blue-300" />
+        <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
+            <Content style={{ padding: '40px 16px' }}>
+                <div className="container mx-auto max-w-6xl">
+                    <Space align="center" size="large" style={{ marginBottom: 32 }}>
+                        <Button
+                            type="default"
+                            shape="circle"
+                            icon={<FaArrowLeft />}
+                            onClick={() => navigate(-1)}
+                            className="shadow-sm border-gray-200"
+                        />
+                        <div>
+                            <h1 className="text-3xl font-black text-gray-900 tracking-tight m-0">Shopping Cart</h1>
+                            <Text type="secondary" className="font-medium">
+                                {selectedItems.length} of {cartItems.length} items selected for checkout
+                            </Text>
                         </div>
-                        <h2 className="text-2xl font-black text-gray-800 mb-2">Your cart is empty</h2>
-                        <p className="text-gray-400 font-medium mb-8">Start customizing products to add them here</p>
-                        <Link
-                            to="/"
-                            className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all hover:scale-105"
-                        >
-                            Browse Products
-                        </Link>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Cart Items */}
-                        <div className="lg:col-span-2 space-y-4">
-                            {cartItems.map((item) => (
-                                <div
-                                    key={item._id}
-                                    className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-100 transition-all overflow-hidden"
-                                >
-                                    <div className="p-5 flex gap-5 items-start">
-                                        {/* Product Image */}
-                                        <div className="w-28 h-28 rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
-                                            {item.finalDesignUrl ? (
-                                                <img
-                                                    src={item.finalDesignUrl}
-                                                    alt={item.template?.name || 'Custom Design'}
-                                                    className="w-full h-full object-contain p-1"
-                                                />
-                                            ) : (
-                                                <div className="flex flex-col items-center text-gray-300">
-                                                    <FaShoppingBag size={28} />
-                                                    <span className="text-[10px] font-bold mt-1">No Preview</span>
-                                                </div>
-                                            )}
-                                        </div>
+                    </Space>
 
-                                        {/* Product Details */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2 mb-2">
-                                                <div>
-                                                    <h3 className="font-black text-gray-900 text-lg leading-tight truncate">
-                                                        {item.template?.name || 'Custom Product'}
-                                                    </h3>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
-                                                            <FaTag size={8} /> Custom Design
-                                                        </span>
+                    <Modal
+                        open={removeModal.isOpen}
+                        title="Remove item?"
+                        onOk={handleConfirmRemove}
+                        onCancel={handleCancelRemove}
+                        okText="Yes, remove"
+                        cancelText="Keep item"
+                        okButtonProps={{ danger: true, className: "rounded-lg" }}
+                        cancelButtonProps={{ className: "rounded-lg" }}
+                    >
+                        <Text>
+                            Are you sure you want to remove{' '}
+                            <Text strong>"{removeModal.itemName}"</Text> from your cart?
+                        </Text>
+                    </Modal>
+
+                    {cartItems.length === 0 ? (
+                        <Card className="rounded-3xl border-gray-100 shadow-sm overflow-hidden">
+                            <Empty
+                                image={<FaShoppingBag size={60} className="text-blue-100 mx-auto mb-4" />}
+                                description={
+                                    <Space direction="vertical">
+                                        <Text strong className="text-xl">Your cart is empty</Text>
+                                        <Text type="secondary">Start customizing products to add them here</Text>
+                                    </Space>
+                                }
+                            >
+                                <Link to="/">
+                                    <Button type="primary" size="large" className="bg-indigo-600 border-indigo-600 rounded-xl h-12 px-8 font-bold">
+                                        Browse Products
+                                    </Button>
+                                </Link>
+                            </Empty>
+                        </Card>
+                    ) : (
+                        <Row gutter={24} align="stretch">
+                            <Col xs={24} lg={16}>
+                                <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                                    {cartItems.map((item) => {
+                                        const isSelected = selectedItemIds.includes(item._id);
+                                        return (
+                                            <Card
+                                                key={item._id}
+                                                className={`rounded-3xl border-gray-100 shadow-sm transition-all duration-300 ${isSelected ? 'ring-2 ring-indigo-500/20 bg-white' : 'opacity-70 grayscale-[0.5] bg-gray-50'}`}
+                                                bodyStyle={{ padding: '24px' }}
+                                            >
+                                                <div className="flex gap-4 sm:gap-6 items-start">
+                                                    {/* Checkbox */}
+                                                    <div className="pt-10">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={() => toggleSelection(item._id)}
+                                                            className="w-6 h-6 rounded-lg accent-indigo-600 cursor-pointer"
+                                                        />
+                                                    </div>
+
+                                                    <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                        {(item.finalImageUrl || item.finalDesignUrl) ? (
+                                                            <img
+                                                                src={item.finalImageUrl || item.finalDesignUrl}
+                                                                alt={item.template?.name || 'Custom Design'}
+                                                                className="w-full h-full object-contain p-2"
+                                                            />
+                                                        ) : (
+                                                            <div className="flex flex-col items-center text-gray-400">
+                                                                <FaShoppingBag size={32} />
+                                                                <span className="text-[10px] font-bold mt-1 uppercase tracking-widest text-gray-400">No Preview</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
+                                                            <div className="min-w-0">
+                                                                <h3 className="font-black text-lg text-gray-800 truncate mb-1">
+                                                                    {item.template?.name || 'Custom Product'}
+                                                                </h3>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-wider">
+                                                                        <FaTag size={8} /> Custom Design
+                                                                    </span>
+                                                                    {isSelected && (
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-wider">
+                                                                            Selected
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-left sm:text-right">
+                                                                <p className="text-xl font-black text-gray-900 mb-0">
+                                                                    ₹{(item.price * (item.quantity || 1)).toLocaleString()}
+                                                                </p>
+                                                                <div className="flex flex-col sm:items-end gap-0.5 mt-1">
+                                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                                        Unit: ₹{item.price}
+                                                                    </p>
+                                                                    {(item.packingCharges > 0 || item.shippingCharges > 0) && (
+                                                                        <div className="flex flex-wrap gap-2 sm:justify-end">
+                                                                            {item.packingCharges > 0 && (
+                                                                                <span className="text-[9px] font-black text-orange-500 uppercase tracking-tighter">
+                                                                                    + ₹{item.packingCharges} Packing
+                                                                                </span>
+                                                                            )}
+                                                                            {item.shippingCharges > 0 && (
+                                                                                <span className="text-[9px] font-black text-blue-500 uppercase tracking-tighter">
+                                                                                    + ₹{item.shippingCharges} Shipping
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <Divider style={{ margin: '12px 0' }} />
+
+                                                        <div className="flex flex-wrap items-center justify-between gap-4">
+                                                            <div className={`flex items-center rounded-xl p-1 gap-1 transition-all ${isSelected ? 'bg-gray-100' : 'bg-gray-50 opacity-50 cursor-not-allowed'}`}>
+                                                                <button
+                                                                    onClick={() => handleQtyChange(item, -1)}
+                                                                    disabled={!isSelected || (item.quantity || 1) <= 1}
+                                                                    title={!isSelected ? "Select item to change quantity" : ""}
+                                                                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white text-gray-500 disabled:opacity-30 transition-all font-black text-lg"
+                                                                >
+                                                                    <FaMinus size={12} />
+                                                                </button>
+                                                                <span className="w-10 text-center font-black text-gray-800 text-sm">
+                                                                    {item.quantity || 1}
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => handleQtyChange(item, 1)}
+                                                                    disabled={!isSelected}
+                                                                    title={!isSelected ? "Select item to change quantity" : ""}
+                                                                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white text-gray-500 disabled:opacity-30 transition-all font-black text-lg"
+                                                                >
+                                                                    <FaPlus size={12} />
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-3">
+                                                                <button
+                                                                    disabled={!isSelected}
+                                                                    onClick={() => navigate(`/customize/${item.template?._id || item.template}`)}
+                                                                    title={!isSelected ? "Select item to edit" : ""}
+                                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black transition-all uppercase tracking-wider
+                                                                        ${isSelected
+                                                                            ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                                            : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`}
+                                                                >
+                                                                    <FaPencilAlt size={10} /> Edit
+                                                                </button>
+                                                                <button
+                                                                    disabled={!isSelected}
+                                                                    onClick={() => handleRemoveClick(item)}
+                                                                    title={!isSelected ? "Select item to remove" : ""}
+                                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black transition-all uppercase tracking-wider
+                                                                        ${isSelected
+                                                                            ? 'bg-red-50 text-red-500 hover:bg-red-100'
+                                                                            : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`}
+                                                                >
+                                                                    <FaTrash size={10} /> Remove
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <p className="text-2xl font-black text-gray-900 whitespace-nowrap">
-                                                    ₹{(item.price * (item.quantity || 1)).toLocaleString()}
+                                            </Card>
+                                        );
+                                    })}
+                                </Space>
+                            </Col>
+
+                            <Col xs={24} lg={8}>
+                                <Card
+                                    className="rounded-3xl border-gray-100 shadow-xl overflow-hidden sticky top-24"
+                                    title={<span className="font-black text-gray-800 uppercase tracking-widest text-xs">Order Summary</span>}
+                                >
+                                    <Space direction="vertical" style={{ width: '100%' }} size="large">
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2 text-gray-500 font-medium">
+                                                    <FaShoppingBag size={14} className="text-gray-400" />
+                                                    Product Cost ({totalItems} items)
+                                                </div>
+                                                <Text strong className="text-gray-800">₹{subtotal.toLocaleString()}</Text>
+                                            </div>
+
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2 text-gray-500 font-medium">
+                                                    <FaBox size={14} className="text-gray-400" />
+                                                    Packing Charges
+                                                </div>
+                                                <Text strong className={packingChargesTotal > 0 ? 'text-gray-800' : 'text-gray-300'}>
+                                                    ₹{packingChargesTotal.toLocaleString()}
+                                                </Text>
+                                            </div>
+
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2 text-gray-500 font-medium">
+                                                    <FaTruck size={14} className="text-gray-400" />
+                                                    Shipping Fee
+                                                </div>
+                                                {shippingChargesTotal === 0
+                                                    ? <span className="px-2 py-0.5 rounded-lg bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-wider">FREE</span>
+                                                    : <Text strong className="text-gray-800">₹{shippingChargesTotal.toLocaleString()}</Text>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-6 border-t border-gray-100">
+                                            <div className="flex justify-between items-end mb-6">
+                                                <div>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Payable</p>
+                                                    <Title level={2} style={{ marginBottom: 0, color: '#4f46e5', fontWeight: 900 }}>
+                                                        ₹{totalPrice.toLocaleString()}
+                                                    </Title>
+                                                </div>
+                                                <span className="text-[11px] text-green-600 font-bold bg-green-50 px-2 py-1 rounded-lg">Best Price ✅</span>
+                                            </div>
+
+                                            <button
+                                                disabled={selectedItems.length === 0}
+                                                onClick={() => navigate('/checkout')}
+                                                className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-2
+                                                    ${selectedItems.length === 0
+                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
+                                                        : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:-translate-y-1 hover:shadow-indigo-200 active:scale-95'
+                                                    }`}
+                                            >
+                                                Proceed to Checkout <span className="text-lg">→</span>
+                                            </button>
+
+                                            <Link to="/" className="block mt-4 text-center">
+                                                <Text type="secondary" className="hover:text-indigo-600 text-xs font-black uppercase tracking-widest cursor-pointer transition-all">
+                                                    ← Continue Shopping
+                                                </Text>
+                                            </Link>
+                                        </div>
+
+                                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-start gap-3">
+                                            <FaShieldAlt className="text-indigo-500 mt-1" />
+                                            <div>
+                                                <Text strong className="text-[11px] uppercase tracking-widest text-gray-700">100% SECURE CHECKOUT</Text>
+                                                <p className="text-[10px] text-gray-400 mt-1 leading-relaxed">
+                                                    We use industry-standard encryption. Your payment details are never stored on our servers.
                                                 </p>
                                             </div>
-
-                                            <p className="text-sm text-gray-400 font-medium mb-4">
-                                                Unit price: <span className="text-gray-600 font-bold">₹{item.price}</span>
-                                            </p>
-
-                                            {/* Quantity & Actions Row */}
-                                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                                {/* Quantity Controls */}
-                                                <div className="flex items-center gap-0 bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
-                                                    <button
-                                                        onClick={() => handleQtyChange(item, -1)}
-                                                        disabled={(item.quantity || 1) <= 1}
-                                                        className="px-3 py-2 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                                    >
-                                                        <FaMinus size={11} />
-                                                    </button>
-                                                    <span className="w-10 text-center font-black text-gray-900 text-sm">
-                                                        {item.quantity || 1}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => handleQtyChange(item, 1)}
-                                                        className="px-3 py-2 text-gray-500 hover:bg-gray-200 transition-colors"
-                                                    >
-                                                        <FaPlus size={11} />
-                                                    </button>
-                                                </div>
-
-                                                {/* Action Buttons */}
-                                                <div className="flex items-center gap-3">
-                                                    <button
-                                                        onClick={() => navigate(`/customize/${item.template?._id || item.template}`)}
-                                                        className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl transition-colors"
-                                                    >
-                                                        <FaPencilAlt size={10} /> Edit Design
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleRemoveClick(item)}
-                                                        className="flex items-center gap-2 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition-colors"
-                                                    >
-                                                        <FaTrash size={10} /> Remove
-                                                    </button>
-                                                </div>
-                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Order Summary */}
-                        <div className="lg:col-span-1">
-                            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm sticky top-24 overflow-hidden">
-                                <div className="p-6 border-b border-gray-50">
-                                    <h2 className="text-xl font-black text-gray-900">Order Summary</h2>
-                                </div>
-                                <div className="p-6 space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-500 font-medium">Subtotal ({totalItems} items)</span>
-                                        <span className="font-black text-gray-800">₹{totalPrice.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <div className="flex items-center gap-2 text-gray-500 font-medium">
-                                            <FaTruck size={12} />
-                                            Shipping
-                                        </div>
-                                        <span className="text-green-600 font-black">FREE</span>
-                                    </div>
-                                    <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
-                                        <span className="text-lg font-black text-gray-900">Total</span>
-                                        <span className="text-2xl font-black text-blue-600">₹{totalPrice.toLocaleString()}</span>
-                                    </div>
-                                </div>
-
-                                <div className="px-6 pb-6 space-y-3">
-                                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black shadow-lg shadow-blue-200 hover:scale-[1.02] transition-all tracking-wide">
-                                        Proceed to Checkout
-                                    </button>
-                                    <Link
-                                        to="/"
-                                        className="flex items-center justify-center gap-2 w-full py-3 border-2 border-gray-200 rounded-2xl font-bold text-gray-600 hover:border-blue-200 hover:text-blue-600 transition-all text-sm"
-                                    >
-                                        <FaShoppingBag size={13} /> Continue Shopping
-                                    </Link>
-                                </div>
-
-                                {/* Trust Badges */}
-                                <div className="mx-6 mb-6 p-4 bg-green-50 rounded-2xl border border-green-100">
-                                    <div className="flex items-start gap-3">
-                                        <FaShieldAlt className="text-green-600 mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs font-black text-green-800 uppercase tracking-wider mb-0.5">Secure Checkout</p>
-                                            <p className="text-xs text-green-600 font-medium leading-snug">
-                                                Your payment info is encrypted and never stored. Powered by Mimitiinaa.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
+                                    </Space>
+                                </Card>
+                            </Col>
+                        </Row>
+                    )}
+                </div>
+            </Content>
+        </Layout>
     );
 };
 

@@ -40,15 +40,12 @@ const AdminDashboard = () => {
     return (
         <div className="container mx-auto p-4">
             <h1 className="text-2xl font-bold mb-4">Create Product</h1>
-            <div className="mb-4 flex gap-4">
-                <Link to="/admin/create-template" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold">
-                    Create New Template
+            <div className="mb-8 flex flex-wrap gap-4">
+                <Link to="/admin/create-template" className="bg-indigo-600 text-white px-6 py-3 rounded-2xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-100 transition-all hover:-translate-y-0.5">
+                    + Create New Template
                 </Link>
-                <Link to="/admin/orders" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 font-semibold">
-                    View Orders
-                </Link>
-                <Link to="/admin/categories" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 font-semibold flex items-center gap-2">
-                    <FaBoxes /> Manage Categories
+                <Link to="/admin/categories" className="bg-white text-gray-700 border border-gray-200 px-6 py-3 rounded-2xl hover:bg-gray-50 font-bold flex items-center gap-2 shadow-sm transition-all hover:-translate-y-0.5">
+                    <FaBoxes className="text-gray-400" /> Manage Categories
                 </Link>
             </div>
 
