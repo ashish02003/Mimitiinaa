@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { FaUsers, FaUserCheck, FaUserSlash, FaEnvelope, FaShieldAlt, FaCalendarAlt, FaSearch } from 'react-icons/fa';
+import { API_BASE } from '../utils/api';
 
 const AdminUsers = () => {
     const { user: currentUser } = useAuth();
@@ -12,7 +12,7 @@ const AdminUsers = () => {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const { data } = await axios.get('http://localhost:5000/api/auth/users', {
+                const { data } = await axios.get(`${API_BASE}/auth/users`, {
                     headers: { Authorization: `Bearer ${currentUser.token}` }
                 });
                 setUsers(data);

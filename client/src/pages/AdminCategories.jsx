@@ -18,7 +18,7 @@ const AdminCategories = () => {
 
     const fetchCategories = async () => {
         try {
-            const { data } = await axios.get('http://localhost:5000/api/categories');
+            const { data } = await axios.get('https://mimitiinaa.vercel.app/api/categories');
             setCategories(data);
         } catch (error) {
             console.error(error);
@@ -76,10 +76,10 @@ const AdminCategories = () => {
             }
 
             if (editId) {
-                await axios.put(`http://localhost:5000/api/categories/${editId}`, formData, config);
+                await axios.put(`https://mimitiinaa.vercel.app/api/categories/${editId}`, formData, config);
                 toast.success('Category updated!');
             } else {
-                await axios.post('http://localhost:5000/api/categories', formData, config);
+                await axios.post('https://mimitiinaa.vercel.app/api/categories', formData, config);
                 toast.success('Category created!');
             }
 
@@ -102,7 +102,7 @@ const AdminCategories = () => {
                     Authorization: `Bearer ${user.token}`
                 }
             };
-            await axios.delete(`http://localhost:5000/api/categories/${id}`, config);
+            await axios.delete(`https://mimitiinaa.vercel.app/api/categories/${id}`, config);
             toast.success('Category deleted');
             fetchCategories();
         } catch (error) {

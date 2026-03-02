@@ -1,14 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE as API } from '../utils/api';
 import toast from 'react-hot-toast';
-import {
-    FaBox, FaTruck, FaCheckCircle, FaTimesCircle, FaSpinner,
-    FaChevronDown, FaChevronUp, FaMapMarkerAlt, FaPhone, FaUser,
-    FaShoppingBag, FaSearch, FaFilter, FaEye, FaBoxOpen
-} from 'react-icons/fa';
-
-const API = 'http://localhost:5000/api';
+import { FaBox, FaTruck, FaCheckCircle, FaTimesCircle, FaSpinner, FaChevronDown, FaChevronUp, FaMapMarkerAlt, FaPhone, FaUser, FaShoppingBag, FaSearch, FaFilter, FaEye, FaBoxOpen } from 'react-icons/fa';
 
 const STATUS_CONFIG = {
     'Order Confirmed': { color: 'bg-blue-100 text-blue-700 border-blue-200', dot: 'bg-blue-500', icon: <FaCheckCircle />, label: 'Order Confirmed' },

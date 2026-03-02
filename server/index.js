@@ -4,12 +4,21 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const cloudinary = require('cloudinary').v2;
 
+// Environment Variable Check
+if (!process.env.MONGO_URI) {
+    console.error('CRITICAL ERROR: MONGO_URI is not defined in .env or Vercel Settings!');
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 const path = require('path');
+const domain = 'https://ashishproject.vercel.app';
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: [domain, 'http://localhost:5173', 'http://localhost:3000'],
+    credentials: true
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -21,9 +30,23 @@ cloudinary.config({
 });
 
 // Database Connection
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.log(err));
+const connectDB = async () => {
+    if (mongoose.connection.readyState >= 1) return;
+    try {
+        await mongoose.connect(process.env.MONGO_URI);
+        console.log('MongoDB connected');
+    } catch (err) {
+        console.error('MongoDB connection error:', err);
+    }
+};
+
+// Connect to DB immediately
+connectDB();
+
+// Better mongoose event logging to help debug connection issues
+mongoose.connection.on('error', (err) => {
+    console.error('Mongoose connection error:', err);
+});
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -36,23 +59,26 @@ app.use('/api/customization', require('./routes/customizationRoutes'));
 app.use('/api/payment', require('./routes/paymentRoutes'));    // ✅ Razorpay
 app.use('/api/shipping', require('./routes/shippingRoutes'));   // ✅ NimbusPost webhook + tracking
 
-app.get('/', (req, res) => {
-    res.send('API is running...');
-});
 
 // Serve frontend static files if present
-app.use(express.static(path.join(__dirname, 'public')));
+const publicPath = path.resolve(__dirname, 'public');
+app.use(express.static(publicPath));
 
 // SPA fallback - serve index.html for any non-API route (client-side routing)
-// Fallback middleware: serve `index.html` for non-API routes (SPA)
 app.use((req, res, next) => {
     if (req.path.startsWith('/api')) return next();
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
+
+// Export for Vercel
+module.exports = app;
 
 
 

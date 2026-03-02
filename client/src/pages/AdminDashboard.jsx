@@ -11,7 +11,7 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const { data } = await axios.get('http://localhost:5000/api/templates');
+                const { data } = await axios.get('https://mimitiinaa.vercel.app/api/templates');
                 setTemplates(data);
             } catch (error) {
                 console.error(error);
@@ -28,7 +28,7 @@ const AdminDashboard = () => {
                         Authorization: `Bearer ${user.token}`
                     }
                 };
-                await axios.delete(`http://localhost:5000/api/templates/${id}`, config);
+                await axios.delete(`https://mimitiinaa.vercel.app/api/templates/${id}`, config);
                 setTemplates(templates.filter(t => t._id !== id));
             } catch (error) {
                 console.error(error);

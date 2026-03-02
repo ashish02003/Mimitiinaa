@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
-import toast from 'react-hot-toast';
+import { API_BASE } from '../utils/api';
 
 const CartContext = createContext();
 
@@ -10,7 +10,7 @@ export const CartProvider = ({ children }) => {
     const [selectedItemIds, setSelectedItemIds] = useState([]); // ✅ NEW: Track selected items for checkout
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
-    const API_URL = 'http://localhost:5000/api/cart';
+    const API_URL = `${API_BASE}/cart`;
 
     const fetchCartItems = async () => {
         if (!user) return;

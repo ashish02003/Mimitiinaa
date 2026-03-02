@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import {
     FaUserCircle, FaBoxOpen, FaHistory, FaShieldAlt,
     FaSignOutAlt, FaEye, FaEyeSlash, FaCheckCircle,
@@ -369,7 +370,7 @@ const Profile = () => {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const { data } = await axios.get('http://localhost:5000/api/orders/myorders', {
+                const { data } = await axios.get(`${API_BASE}/orders/myorders`, {
                     headers: { Authorization: `Bearer ${user.token}` }
                 });
                 setOrders(data);
@@ -393,7 +394,7 @@ const Profile = () => {
         setChangingPwd(true);
         try {
             await axios.put(
-                'http://localhost:5000/api/auth/change-password',
+                `${API_BASE}/auth/change-password`,
                 { currentPassword, newPassword },
                 { headers: { Authorization: `Bearer ${user.token}` } }
             );

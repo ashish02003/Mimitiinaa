@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
@@ -12,7 +12,7 @@ import CreateTemplate from './pages/CreateTemplate';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import CustomizeProduct from './pages/CustomizeProduct';
-import MobileCases from './pages/MobileCases';
+
 import Profile from './pages/Profile';
 import Cart from './pages/Cart';
 import ProductCategory from './pages/ProductCategory';
@@ -67,6 +67,21 @@ const Navigation = () => {
     const { cartItems } = useCart();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+    const location = useLocation();
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Hide header on auth pages
+    const isAuthPage = ['/login', '/register', '/admin/login'].includes(location.pathname);
+
+    if (isAuthPage) return null;
 
     const handleLogoutClick = () => {
         setIsProfileOpen(false);
@@ -85,135 +100,131 @@ const Navigation = () => {
                 onConfirm={handleConfirmLogout}
                 onCancel={() => setShowLogoutModal(false)}
             />
-            <header className="w-full bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100 shadow-sm font-sans">
-                <nav className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between gap-8">
+            <header className={`w-full sticky top-0 z-50 transition-all duration-700 font-sans ${scrolled
+                ? 'bg-white/90 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04),0_20px_60px_-15px_rgba(0,0,0,0.08)] py-1.5 border-b border-slate-50'
+                : 'bg-transparent py-5 border-b border-transparent'
+                }`}>
+                <nav className="max-w-7xl mx-auto px-6 h-12 md:h-16 flex items-center justify-between">
                     {/* Left: Logo */}
-                    <Link to="/" className="flex items-center hover:opacity-80 transition-opacity flex-shrink-0">
+                    <Link to="/" className="hover:opacity-90 transition-all transform active:scale-95">
                         <Logo />
                     </Link>
 
-                    {/* Right: Nav links + Cart + Account */}
-                    <div className="flex items-center gap-4">
-                        {/* Nav Links inline with actions */}
-                        <div className="hidden lg:flex items-center gap-6 border-r border-gray-100 pr-4 mr-1">
-                            <Link to="/" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors uppercase tracking-wider relative group">
-                                Home
-                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
+                    {/* Middle: Desktop Nav Links */}
+                    <div className="hidden lg:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
+                        <Link to="/" className="text-[13px] font-black text-slate-900 hover:text-blue-600 transition-colors uppercase tracking-[0.1em] relative group">
+                            Home
+                            <span className="absolute -bottom-1.5 left-0 w-0 h-[2px] bg-blue-600 group-hover:w-full transition-all duration-300"></span>
+                        </Link>
+                        <Link to="/" className="text-[13px] font-black text-slate-900 hover:text-blue-600 transition-colors uppercase tracking-[0.1em] relative group">
+                            Designs
+                            <span className="absolute -bottom-1.5 left-0 w-0 h-[2px] bg-blue-600 group-hover:w-full transition-all duration-300"></span>
+                        </Link>
+                        {user && user.role === 'admin' && (
+                            <Link to="/admin" className="text-[13px] font-black text-slate-900 hover:text-blue-600 transition-colors uppercase tracking-[0.1em] relative group">
+                                Admin
+                                <span className="absolute -bottom-1.5 left-0 w-0 h-[2px] bg-blue-600 group-hover:w-full transition-all duration-300"></span>
                             </Link>
-                            {user && user.role === 'admin' && (
-                                <Link to="/admin" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors uppercase tracking-wider relative group">
-                                    Dashboard
-                                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300 rounded-full"></span>
-                                </Link>
-                            )}
-                        </div>
-                        {/* Cart icon (shown for non-admin users) */}
+                        )}
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-3">
+                        {/* Cart */}
                         {(!user || user.role !== 'admin') && (
-                            <Link to="/cart" className="relative p-3 rounded-2xl bg-gray-50 hover:bg-blue-600 hover:text-white transition-all group shadow-sm border border-gray-100">
-                                <FaShoppingCart className="text-lg text-gray-600 group-hover:text-white transition-colors" />
+                            <Link to="/cart" className="relative p-2.5 rounded-full hover:bg-slate-50 transition-all text-slate-700 hover:text-blue-600 active:scale-90">
+                                <FaShoppingCart size={20} />
                                 {cartItems.length > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black min-w-[20px] h-5 flex items-center justify-center rounded-full border-2 border-white shadow-md">
+                                    <span className="absolute top-1 right-1 bg-blue-600 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full ring-[3px] ring-white">
                                         {cartItems.length}
                                     </span>
                                 )}
                             </Link>
                         )}
 
+                        {/* Account */}
                         {user ? (
                             <div className="relative">
                                 <button
                                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                                    className="flex items-center gap-2.5 pl-3 pr-4 py-2 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all border border-gray-100 group"
+                                    className="flex items-center gap-2 p-1 pl-2 pr-1 rounded-full border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all active:scale-95 bg-white shadow-sm"
                                 >
-                                    <div className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shadow-md flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-slate-100 flex-shrink-0">
                                         {user.avatar ? (
                                             <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-sm font-black">
-                                                {user.name.charAt(0).toUpperCase()}
+                                            <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white text-[12px] font-black uppercase">
+                                                {user.name.charAt(0)}
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex flex-col items-start hidden sm:flex">
-                                        <span className="text-[9px] font-black text-gray-400 uppercase leading-none tracking-wider">Account</span>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-sm font-black text-gray-800 leading-none">{user.name.split(' ')[0]}</span>
-                                            {isProfileOpen
-                                                ? <FaChevronUp className="text-[10px] text-blue-600" />
-                                                : <FaChevronDown className="text-[10px] text-gray-400 group-hover:text-blue-600 transition-colors" />
-                                            }
-                                        </div>
-                                    </div>
-                                    {/* Mobile: just show chevron */}
-                                    <span className="sm:hidden">
-                                        {isProfileOpen
-                                            ? <FaChevronUp className="text-[10px] text-blue-600" />
-                                            : <FaChevronDown className="text-[10px] text-gray-400" />
-                                        }
-                                    </span>
+                                    <FaChevronDown className={`text-[9px] text-slate-400 mr-2 transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* Dropdown Menu */}
                                 {isProfileOpen && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)} />
-                                        <div className="absolute right-0 mt-3 w-60 bg-white rounded-2xl shadow-2xl shadow-slate-900/10 border border-gray-100 py-2 z-50 animate-fadeIn">
-                                            <div className="px-5 py-3.5 border-b border-gray-50">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Signed in as</p>
-                                                <p className="text-sm font-black text-gray-900 truncate">{user.name}</p>
-                                                <p className="text-xs text-gray-400 font-medium truncate">{user.email}</p>
+                                        <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100 py-3 z-50 animate-fadeIn">
+                                            <div className="px-5 py-4 border-b border-slate-50">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Account</p>
+                                                <p className="text-[15px] font-[900] text-slate-900 truncate leading-none mb-1">{user.name}</p>
+                                                <p className="text-xs text-slate-500 font-medium truncate">{user.email}</p>
                                             </div>
-                                            <div className="py-1">
+
+                                            <div className="py-2">
                                                 <Link
                                                     to="/profile"
                                                     onClick={() => setIsProfileOpen(false)}
-                                                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                    className="flex items-center gap-3 px-5 py-3 text-[13px] font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
                                                 >
-                                                    <FaUserCircle className="text-base text-gray-400" />
-                                                    My Profile
+                                                    <FaUserCircle size={16} />
+                                                    Personal Profile
                                                 </Link>
+
                                                 {user.role === 'admin' && (
-                                                    <div className="border-t border-gray-50 my-1 pt-1">
-                                                        <p className="px-5 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">Admin Control</p>
+                                                    <div className="border-t border-slate-50 my-1 pt-1">
                                                         <Link
                                                             to="/admin/orders"
                                                             onClick={() => setIsProfileOpen(false)}
-                                                            className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                            className="flex items-center gap-3 px-5 py-3 text-[13px] font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
                                                         >
-                                                            <FaShoppingCart className="text-base text-gray-400" />
-                                                            Manage Orders
+                                                            <FaShoppingCart size={16} />
+                                                            Order Management
                                                         </Link>
                                                         <Link
                                                             to="/admin/users"
                                                             onClick={() => setIsProfileOpen(false)}
-                                                            className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                            className="flex items-center gap-3 px-5 py-3 text-[13px] font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
                                                         >
-                                                            <FaUser className="text-base text-gray-400" />
-                                                            Manage Users
+                                                            <FaUser size={16} />
+                                                            User Directory
                                                         </Link>
                                                     </div>
                                                 )}
+
                                                 {user.role !== 'admin' && (
                                                     <Link
                                                         to="/cart"
                                                         onClick={() => setIsProfileOpen(false)}
-                                                        className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                        className="flex items-center gap-3 px-5 py-3 text-[13px] font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
                                                     >
-                                                        <FaShoppingCart className="text-base text-gray-400" />
-                                                        My Cart
+                                                        <FaShoppingCart size={16} />
+                                                        Shopping Cart
                                                         {cartItems.length > 0 && (
-                                                            <span className="ml-auto bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full">{cartItems.length}</span>
+                                                            <span className="ml-auto bg-blue-50 text-blue-600 text-[10px] font-black px-2 py-0.5 rounded-full">{cartItems.length}</span>
                                                         )}
                                                     </Link>
                                                 )}
                                             </div>
-                                            <div className="border-t border-gray-50 py-1">
+
+                                            <div className="border-t border-slate-50 pt-2 px-2">
                                                 <button
                                                     onClick={handleLogoutClick}
-                                                    className="w-full flex items-center gap-3 px-5 py-3 text-sm font-black text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
+                                                    className="w-full flex items-center gap-3 px-3 py-3 text-[13px] font-black text-red-500 hover:bg-red-50 rounded-xl transition-all"
                                                 >
-                                                    <FaSignOutAlt className="text-base" />
-                                                    Logout
+                                                    <FaSignOutAlt size={16} />
+                                                    Sign Out
                                                 </button>
                                             </div>
                                         </div>
@@ -221,13 +232,13 @@ const Navigation = () => {
                                 )}
                             </div>
                         ) : (
-                            <Link to="/login" className="px-5 py-2.5 rounded-2xl text-sm font-black text-white bg-blue-600 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 hover:scale-105">
+                            <Link to="/login" className="px-6 py-2.5 rounded-full text-xs font-black text-white bg-slate-900 hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-slate-200 uppercase tracking-widest">
                                 Sign In
                             </Link>
                         )}
                     </div>
                 </nav>
-            </header >
+            </header>
         </>
     );
 };
@@ -246,7 +257,7 @@ function App() {
                             <Route path="/admin/login" element={<AdminLogin />} />
                             <Route path="/register" element={<Register />} />
 
-                            <Route path="/mobile-cases" element={<MobileCases />} />
+
                             <Route path="/category/:categoryName" element={<ProductCategory />} />
                             <Route path="/product/:id" element={<TemplateDetails />} />
                             <Route path="/customize/:id" element={<CustomizeProduct />} />

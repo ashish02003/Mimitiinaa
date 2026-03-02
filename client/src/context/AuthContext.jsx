@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -23,7 +24,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const { data } = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+            const { data } = await axios.post(`${API_BASE}/auth/login`, { email, password });
             persistUser(data);
             return { success: true };
         } catch (error) {
@@ -36,7 +37,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (name, email, password) => {
         try {
-            const { data } = await axios.post('http://localhost:5000/api/auth/register', { name, email, password });
+            const { data } = await axios.post(`${API_BASE}/auth/register`, { name, email, password });
             persistUser(data);
             return { success: true };
         } catch (error) {
@@ -55,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     const updateProfile = async (name, email) => {
         try {
             const { data } = await axios.put(
-                'http://localhost:5000/api/auth/profile',
+                `${API_BASE}/auth/profile`,
                 { name, email },
                 { headers: { Authorization: `Bearer ${user.token}` } }
             );
@@ -75,7 +76,7 @@ export const AuthProvider = ({ children }) => {
             const formData = new FormData();
             formData.append('avatar', file);
             const { data } = await axios.put(
-                'http://localhost:5000/api/auth/avatar',
+                `${API_BASE}/auth/avatar`,
                 formData,
                 {
                     headers: {
@@ -104,7 +105,7 @@ export const AuthProvider = ({ children }) => {
     const deleteAvatar = async () => {
         try {
             const { data } = await axios.delete(
-                'http://localhost:5000/api/auth/avatar',
+                `${API_BASE}/auth/avatar`,
                 { headers: { Authorization: `Bearer ${user.token}` } }
             );
             const updatedUser = { ...data, token: user.token };

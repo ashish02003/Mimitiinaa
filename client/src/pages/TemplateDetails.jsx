@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import { Layout, Row, Col, Card, Typography, Button, Tag, Skeleton, Result, Space } from 'antd';
 import { FaChevronLeft } from 'react-icons/fa';
 
@@ -19,7 +20,7 @@ const TemplateDetails = () => {
             setLoading(true);
             setError(null);
             try {
-                const { data } = await axios.get(`http://localhost:5000/api/templates/${id}`);
+                const { data } = await axios.get(`${API_BASE}/templates/${id}`);
                 setTemplate(data);
             } catch (err) {
                 console.error(err);

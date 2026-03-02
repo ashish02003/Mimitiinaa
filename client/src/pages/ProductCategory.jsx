@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaSearch, FaChevronRight, FaShoppingCart, FaMagic } from 'react-icons/fa';
 
@@ -18,7 +19,7 @@ const ProductCategory = () => {
         const fetchTemplates = async () => {
             setLoading(true);
             try {
-                const { data } = await axios.get(`http://localhost:5000/api/templates?category=${displayCategory}`);
+                const { data } = await axios.get(`${API_BASE}/templates?category=${displayCategory}`);
                 setTemplates(data);
             } catch (error) {
                 console.error('Error fetching templates:', error);

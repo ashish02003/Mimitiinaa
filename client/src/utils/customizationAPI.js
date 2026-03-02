@@ -71,8 +71,7 @@
 
 
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE as API_URL } from './api';
 
 // Upload image to Cloudinary with progress tracking
 export const uploadImage = async (file, onProgress) => {

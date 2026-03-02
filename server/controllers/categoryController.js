@@ -69,8 +69,13 @@ const getCategories = async (req, res) => {
         const categories = await Category.find({}).sort({ name: 1 });
         res.json(categories);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        console.error('Error in getCategories:', error && error.message ? error.message : error);
+        // Include stack during development for easier debugging
+        const resp = { message: 'Server Error' };
+        if (process.env.NODE_ENV !== 'production') {
+            resp.error = { message: error.message, stack: error.stack };
+        }
+        res.status(500).json(resp);
     }
 };
 

@@ -3,13 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import toast from 'react-hot-toast';
-import {
-    FaMapMarkerAlt, FaPhone, FaUser, FaShoppingBag,
-    FaTruck, FaBox, FaLock, FaArrowLeft, FaCheckCircle
-} from 'react-icons/fa';
-
-const API = 'http://localhost:5000/api';
+import { API_BASE as API } from '../utils/api';
 
 // Load Razorpay script dynamically
 const loadRazorpay = () => new Promise((resolve) => {

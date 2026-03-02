@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as fabric from 'fabric';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import EmojiPicker from 'emoji-picker-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -38,7 +39,7 @@ const CustomizeProduct = () => {
     useEffect(() => {
         const fetchTemplate = async () => {
             try {
-                const { data } = await axios.get(`http://localhost:5000/api/templates/${id}`);
+                const { data } = await axios.get(`${API_BASE}/templates/${id}`);
                 setTemplate(data);
 
                 // If it's a mug and user has already uploaded something, or if it's explicitly a wrap template
@@ -451,7 +452,7 @@ const CustomizeProduct = () => {
             const formData = new FormData();
             formData.append('image', file);
 
-            const uploadRes = await axios.post('http://localhost:5000/api/upload', formData, {
+            const uploadRes = await axios.post(`${API_BASE}/upload`, formData, {
                 onUploadProgress: (ev) => {
                     if (ev.total) {
                         const pct = Math.round((ev.loaded * 100) / ev.total);
@@ -594,11 +595,11 @@ const CustomizeProduct = () => {
             const blob = await (await fetch(dataUrl)).blob();
             const formData = new FormData();
             formData.append('image', blob, 'design.png');
-            const { data } = await axios.post('http://localhost:5000/api/upload', formData);
+            const { data } = await axios.post(`${API_BASE}/upload`, formData);
 
             const payload = { template: template._id, customizedJson: canvas.toJSON(), finalImageUrl: data.url, price: template.basePrice, qty: 1 };
             if (directBuy) {
-                await axios.post('http://localhost:5000/api/orders', { orderItems: [payload], totalPrice: template.basePrice, paymentMethod: 'Card' }, { headers: { Authorization: `Bearer ${user.token}` } });
+                await axios.post(`${API_BASE}/orders`, { orderItems: [payload], totalPrice: template.basePrice, paymentMethod: 'Card' }, { headers: { Authorization: `Bearer ${user.token}` } });
                 navigate('/profile');
             } else {
                 await addToCart(payload);

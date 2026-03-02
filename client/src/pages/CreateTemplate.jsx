@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -34,7 +35,7 @@ const CreateTemplate = () => {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const { data } = await axios.get('http://localhost:5000/api/categories');
+                const { data } = await axios.get(`${API_BASE}/categories`);
                 setCategories(data);
                 setCategory(prev => {
                     if (data.length === 0) return prev;
@@ -259,7 +260,7 @@ const CreateTemplate = () => {
         if (isEdit && canvas) {
             const fetchTemplate = async () => {
                 try {
-                    const { data } = await axios.get(`http://localhost:5000/api/templates/${id}`);
+                    const { data } = await axios.get(`${API_BASE}/templates/${id}`);
                     setName(data.name || '');
                     setCategory(data.category || '');
                     setPrice(data.basePrice || 0);
@@ -345,7 +346,6 @@ const CreateTemplate = () => {
                 const formData = new FormData();
                 formData.append('image', file);
 
-                const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
                 const uploadRes = await axios.post(`${API_BASE}/upload`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
@@ -463,7 +463,6 @@ const CreateTemplate = () => {
             const demoFile = new File([blob], 'demo.png', { type: 'image/png' });
             const formData = new FormData();
             formData.append('image', demoFile);
-            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
             const uploadRes = await axios.post(`${API_BASE}/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
             setDemoImageUrl(uploadRes.data.url);
             toast.success('Demo ready! Ab niche "Save Template" / "Update Template" dabayein taaki user dashboard par ye dikhe.', { id: 'demo-gen', duration: 5000 });
@@ -1701,7 +1700,7 @@ const CreateTemplate = () => {
             const formData = new FormData();
             formData.append('image', file);
 
-            const uploadRes = await axios.post('http://localhost:5000/api/upload', formData, {
+            const uploadRes = await axios.post(`${API_BASE}/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 onUploadProgress: (progressEvent) => {
                     const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -1776,10 +1775,10 @@ const CreateTemplate = () => {
             };
 
             if (isEdit) {
-                await axios.put(`http://localhost:5000/api/templates/${id}`, templateData, config);
+                await axios.put(`${API_BASE}/templates/${id}`, templateData, config);
                 toast.success('Template Updated Successfully!');
             } else {
-                await axios.post('http://localhost:5000/api/templates', templateData, config);
+                await axios.post(`${API_BASE}/templates`, templateData, config);
                 toast.success('Template Saved Successfully!');
             }
 

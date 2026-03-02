@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE as API } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import {
     FaCheckCircle, FaShoppingBag, FaTruck, FaBox,
     FaMapMarkerAlt, FaPhone, FaUser, FaHome, FaClipboardList
 } from 'react-icons/fa';
-
-const API = 'http://localhost:5000/api';
 
 const statusConfig = {
     'Order Confirmed': { color: 'bg-blue-100 text-blue-700', icon: '✅', step: 1 },
